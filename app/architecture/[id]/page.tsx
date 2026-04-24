@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { getSession, saveSession } from "../../../lib/sessionStorage";
 import ReactFlow, {
     Background,
     Controls,
@@ -81,133 +82,167 @@ export default function ArchitecturePage() {
         setLoading(true);
         setError(null);
         try {
-            const stored = sessionStorage.getItem(`messages-${problemId}`);
-                const messages = stored ? JSON.parse(stored) : [];
+            const session = getSession(String(problemId));
+            const messages = session ? session.messages : [];
 
-                const res = await fetch("/api/architecture", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ problem, messages }),
-                });
-
-                const data = await res.json();
-
-                if (!res.ok) {
-                    const msg = typeof data.error === "object"
-                        ? data.error.message
-                        : data.error || "Failed to generate architecture";
-                    throw new Error(msg);
-                }
-
-                const styledNodes = (data.nodes || []).map((node: any) => ({
-                    ...node,
-                    style: {
-                        background: "#0f172a",
-                        color: "#ffffff",
-                        border: "1px solid #334155",
-                        borderRadius: 14,
-                        padding: 14,
-                        width: 190,
-                        fontSize: 13,
-                        fontWeight: 600,
-                        boxShadow: "0 12px 30px rgba(0,0,0,0.35)",
-                    },
-                }));
-
-                const styledEdges = (data.edges || []).map((edge: any) => ({
-                    ...edge,
-                    type: "smoothstep",
-                    animated: true,
-                    markerEnd: {
-                        type: MarkerType.ArrowClosed,
-                    },
-                    style: {
-                        stroke: "#64748b",
-                        strokeWidth: 2,
-                    },
-                    labelStyle: {
-                        fill: "#cbd5e1",
-                        fontSize: 11,
-                        fontWeight: 600,
-                    },
-                    labelBgStyle: {
-                        fill: "#020617",
-                        fillOpacity: 0.9,
-                    },
-                }));
-
-                const layouted = getLayoutedElements(styledNodes, styledEdges);
-
+            if (session?.architecture) {
+                const layouted = getLayoutedElements(session.architecture.nodes, session.architecture.edges);
                 setNodes(layouted.nodes);
                 setEdges(layouted.edges);
-            } catch (error) {
-  console.error(error);
-
-  const fallbackNodes = [
-    { id: "1", data: { label: "Client App" } },
-    { id: "2", data: { label: "API Gateway" } },
-    { id: "3", data: { label: "Core Service" } },
-    { id: "4", data: { label: "PostgreSQL Database" } },
-    { id: "5", data: { label: "Redis Cache" } },
-    { id: "6", data: { label: "Message Queue" } },
-  ];
-
-  const fallbackEdges = [
-    { id: "e1-2", source: "1", target: "2", label: "HTTP" },
-    { id: "e2-3", source: "2", target: "3", label: "Route" },
-    { id: "e3-4", source: "3", target: "4", label: "Read/Write" },
-    { id: "e3-5", source: "3", target: "5", label: "Cache" },
-    { id: "e3-6", source: "3", target: "6", label: "Async Events" },
-  ];
-
-  const fallbackStyledNodes = fallbackNodes.map((node: any) => ({
-    ...node,
-    style: {
-      background: "#0f172a",
-      color: "#ffffff",
-      border: "1px solid #334155",
-      borderRadius: 14,
-      padding: 14,
-      width: 190,
-      fontSize: 13,
-      fontWeight: 600,
-      boxShadow: "0 12px 30px rgba(0,0,0,0.35)",
-    },
-  }));
-
-  const fallbackStyledEdges = fallbackEdges.map((edge: any) => ({
-    ...edge,
-    type: "smoothstep",
-    animated: true,
-    style: {
-      stroke: "#64748b",
-      strokeWidth: 2,
-    },
-  }));
-
-  const layouted = getLayoutedElements(fallbackStyledNodes, fallbackStyledEdges);
-
-  setNodes(layouted.nodes);
-  setEdges(layouted.edges);
-} finally {
                 setLoading(false);
+                return;
             }
+
+            const res = await fetch("/api/architecture", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ problem, messages }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                const msg = typeof data.error === "object"
+                    ? data.error.message
+                    : data.error || "Failed to generate architecture";
+                throw new Error(msg);
+            }
+
+            const styledNodes = (data.nodes || []).map((node: any) => ({
+                ...node,
+                style: {
+                    background: "#0f172a",
+                    color: "#ffffff",
+                    border: "1px solid #334155",
+                    borderRadius: 14,
+                    padding: 14,
+                    width: 190,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    boxShadow: "0 12px 30px rgba(0,0,0,0.35)",
+                },
+            }));
+
+            const styledEdges = (data.edges || []).map((edge: any) => ({
+                ...edge,
+                type: "smoothstep",
+                animated: true,
+                markerEnd: {
+                    type: MarkerType.ArrowClosed,
+                },
+                style: {
+                    stroke: "#64748b",
+                    strokeWidth: 2,
+                },
+                labelStyle: {
+                    fill: "#cbd5e1",
+                    fontSize: 11,
+                    fontWeight: 600,
+                },
+                labelBgStyle: {
+                    fill: "#020617",
+                    fillOpacity: 0.9,
+                },
+            }));
+
+            if (session) {
+                session.architecture = { nodes: styledNodes, edges: styledEdges };
+                saveSession(session);
+            }
+
+            const layouted = getLayoutedElements(styledNodes, styledEdges);
+
+            setNodes(layouted.nodes);
+            setEdges(layouted.edges);
+        } catch (error) {
+            console.error(error);
+
+            const fallbackNodes = [
+                { id: "1", data: { label: "Client App" } },
+                { id: "2", data: { label: "API Gateway" } },
+                { id: "3", data: { label: "Core Service" } },
+                { id: "4", data: { label: "PostgreSQL Database" } },
+                { id: "5", data: { label: "Redis Cache" } },
+                { id: "6", data: { label: "Message Queue" } },
+            ];
+
+            const fallbackEdges = [
+                { id: "e1-2", source: "1", target: "2", label: "HTTP" },
+                { id: "e2-3", source: "2", target: "3", label: "Route" },
+                { id: "e3-4", source: "3", target: "4", label: "Read/Write" },
+                { id: "e3-5", source: "3", target: "5", label: "Cache" },
+                { id: "e3-6", source: "3", target: "6", label: "Async Events" },
+            ];
+
+            const fallbackStyledNodes = fallbackNodes.map((node: any) => ({
+                ...node,
+                style: {
+                    background: "#0f172a",
+                    color: "#ffffff",
+                    border: "1px solid #334155",
+                    borderRadius: 14,
+                    padding: 14,
+                    width: 190,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    boxShadow: "0 12px 30px rgba(0,0,0,0.35)",
+                },
+            }));
+
+            const fallbackStyledEdges = fallbackEdges.map((edge: any) => ({
+                ...edge,
+                type: "smoothstep",
+                animated: true,
+                style: {
+                    stroke: "#64748b",
+                    strokeWidth: 2,
+                },
+            }));
+
+            const layouted = getLayoutedElements(fallbackStyledNodes, fallbackStyledEdges);
+
+            setNodes(layouted.nodes);
+            setEdges(layouted.edges);
+        } finally {
+            setLoading(false);
+        }
     }, [problemId, problem]);
 
     const handleNodeClick = async (_: any, node: any) => {
         setSelectedNode(node);
         setNodeExplanation(null);
         setExplanationLoading(true);
+
+        const nodeLabel = node.data?.label;
+        if (!nodeLabel) {
+            setExplanationLoading(false);
+            return;
+        }
+
+        const session = getSession(String(problemId));
+        if (session?.explanations?.[nodeLabel]) {
+            setNodeExplanation(session.explanations[nodeLabel]);
+            setExplanationLoading(false);
+            return;
+        }
+
         try {
             const res = await fetch("/api/node-explanation", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ problem, nodeLabel: node.data?.label }),
+                body: JSON.stringify({ problem, nodeLabel }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Failed to explain node");
+
+            if (session) {
+                if (!session.explanations) session.explanations = {};
+                session.explanations[nodeLabel] = data;
+                saveSession(session);
+            }
+
             setNodeExplanation(data);
         } catch (error) {
             console.error(error);

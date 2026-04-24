@@ -47,22 +47,46 @@ Behavior:
 
 Conversation:
 ${messages.map((m: any) => `${m.role}: ${m.content}`).join("\n")}
+Return ONLY valid JSON. No markdown. No plain text.
+{
+  "reply": "string",
+  "shouldAdvance": boolean,
+  "nextStep": number,
+  "scores": { "clarity": number, "depth": number, "correctness": number }
+}
 `;
-
 
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
             contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+            },
         });
 
         const rawText = response.text || "";
 
-        const cleaned = rawText
-            .replace(/```json/g, "")
-            .replace(/```/g, "")
-            .trim();
+        let parsed;
 
-        const parsed = JSON.parse(cleaned);
+        try {
+            const cleaned = rawText
+                .replace(/```json/g, "")
+                .replace(/```/g, "")
+                .trim();
+
+            parsed = JSON.parse(cleaned);
+        } catch {
+            parsed = {
+                reply: rawText || "What are the core functional requirements?",
+                shouldAdvance: false,
+                nextStep: step,
+                scores: {
+                    clarity: 5,
+                    depth: 5,
+                    correctness: 5,
+                },
+            };
+        }
 
         return Response.json(parsed);
     } catch (error: any) {

@@ -1,7 +1,8 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { saveSession, getSession } from "../../../lib/sessionStorage";
 
 const problems = [
     "Design Uber",
@@ -46,6 +47,15 @@ export default function InterviewPage() {
 
     const [input, setInput] = useState("");
 
+    useEffect(() => {
+        const session = getSession(String(problemId));
+        if (session) {
+            if (session.messages) setMessages(session.messages);
+            if (session.scores) setScores(session.scores);
+            if (session.currentStep !== undefined) setCurrentStep(session.currentStep);
+        }
+    }, [problemId]);
+
     const sendMessage = async () => {
         if (!input.trim()) return;
 
@@ -72,19 +82,30 @@ export default function InterviewPage() {
                 throw new Error(data.error || "Something went wrong");
             }
 
-            setMessages([
+            const finalMessages = [
                 ...newMessages,
                 {
                     role: "ai",
                     content: data.reply,
                 },
-            ]);
+            ];
 
+            setMessages(finalMessages);
             setScores(data.scores);
 
+            const nextStep = data.shouldAdvance ? data.nextStep : currentStep;
             if (data.shouldAdvance) {
                 setCurrentStep(data.nextStep);
             }
+
+            saveSession({
+                id: String(problemId),
+                problem,
+                messages: finalMessages,
+                scores: data.scores,
+                currentStep: nextStep,
+                createdAt: new Date().toISOString(),
+            });
         } catch (error) {
             console.error(error);
 
