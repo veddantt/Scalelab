@@ -12,16 +12,7 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import dagre from "dagre";
 
-const problems = [
-    "Design Uber",
-    "Design Twitter Feed",
-    "Design Netflix",
-    "Design WhatsApp",
-    "Design URL Shortener",
-    "Design Rate Limiter",
-    "Design Food Delivery App",
-    "Design Real-Time Chat App",
-];
+import { getScenario } from "../../../lib/scenarios";
 
 const nodeWidth = 190;
 const nodeHeight = 70;
@@ -67,8 +58,9 @@ function getLayoutedElements(nodes: any[], edges: any[]) {
 
 export default function ArchitecturePage() {
     const params = useParams();
-    const problemId = Number(params.id);
-    const problem = problems[problemId] || "System Design Problem";
+    const problemId = params.id as string;
+    const scenario = getScenario(problemId);
+    const problem = scenario?.title || "System Design Problem";
 
     const [nodes, setNodes] = useState<any[]>([]);
     const [edges, setEdges] = useState<any[]>([]);
@@ -262,16 +254,27 @@ export default function ArchitecturePage() {
     }, [generateArchitecture]);
 
     return (
-        <main className="h-screen bg-black text-white flex flex-col">
-            <div className="p-4 border-b border-gray-800 flex items-center justify-between">
-                <h1 className="text-xl font-semibold">{problem} Architecture</h1>
+        <main className="h-screen bg-[#020617] text-white flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-800/50 bg-black/40 backdrop-blur-md flex items-center justify-between shadow-sm z-10">
+                <div className="flex flex-col">
+                    <span className="text-purple-400 text-xs font-bold tracking-widest uppercase mb-1">Architecture Workspace</span>
+                    <h1 className="text-xl font-semibold text-white">{problem}</h1>
+                </div>
 
-                <a
-                    href={`/interview/${problemId}`}
-                    className="text-sm text-gray-400 hover:text-white"
-                >
-                    Back to Interview
-                </a>
+                <div className="flex items-center gap-4">
+                    <a
+                        href={`/interview/${problemId}`}
+                        className="text-sm text-gray-400 hover:text-white transition-colors"
+                    >
+                        ← Back to Interview
+                    </a>
+                    <a
+                        href={`/review/${problemId}`}
+                        className="px-5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium text-sm transition-all shadow-lg hover:shadow-purple-500/25"
+                    >
+                        Finish & Get Review →
+                    </a>
+                </div>
             </div>
 
             <div className="flex-1 flex">

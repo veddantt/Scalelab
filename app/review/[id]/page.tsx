@@ -3,31 +3,59 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
-const problems = [
-    "Design Uber",
-    "Design Twitter Feed",
-    "Design Netflix",
-    "Design WhatsApp",
-    "Design URL Shortener",
-    "Design Rate Limiter",
-    "Design Food Delivery App",
-    "Design Real-Time Chat App",
-];
+import { getScenario } from "../../../lib/scenarios";
+import { getSession } from "../../../lib/sessionStorage";
+import { supabase } from "../../../lib/supabase";
 
 export default function ReviewPage() {
     const params = useParams();
-    const problemId = Number(params.id);
-    const problem = problems[problemId] || "System Design Problem";
+    const problemId = params.id as string;
+    const scenario = getScenario(problemId);
+    const problem = scenario?.title || "System Design Problem";
 
     const [review, setReview] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [sharing, setSharing] = useState(false);
+    const [shareUrl, setShareUrl] = useState<string | null>(null);
+
+    const handleShare = async () => {
+        setSharing(true);
+        try {
+            const session = getSession(problemId);
+            if (!session) throw new Error("No session found in local storage.");
+
+            const { data, error: dbError } = await supabase
+                .from("sessions")
+                .insert([
+                    {
+                        scenario_id: problemId,
+                        messages: session.messages || [],
+                        scores: session.scores || {},
+                        architecture: session.architecture || {},
+                        review: review,
+                    },
+                ])
+                .select()
+                .single();
+
+            if (dbError) throw dbError;
+            
+            const url = `${window.location.origin}/share/${data.id}`;
+            setShareUrl(url);
+        } catch (err: any) {
+            console.error("Failed to share:", err);
+            alert("Failed to create share link: " + err.message);
+        } finally {
+            setSharing(false);
+        }
+    };
 
     useEffect(() => {
         const generateReview = async () => {
             try {
-                const stored = sessionStorage.getItem(`messages-${problemId}`);
-                const messages = stored ? JSON.parse(stored) : [];
+                const session = getSession(problemId);
+                const messages = session ? session.messages : [];
 
                 const res = await fetch("/api/review", {
                     method: "POST",
@@ -78,13 +106,48 @@ export default function ReviewPage() {
                             View Architecture
                         </a>
                         <a
-                            href="/"
+                            href="/problems"
                             className="px-5 py-2.5 bg-white text-black hover:bg-gray-200 rounded-xl transition text-sm font-medium"
                         >
-                            Back to Home
+                            Back to Library
                         </a>
+                        {!loading && !error && review && (
+                            <button
+                                onClick={handleShare}
+                                disabled={sharing || !!shareUrl}
+                                className="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-xl transition text-sm font-medium shadow-lg disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {sharing ? (
+                                    <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                                ) : shareUrl ? (
+                                    "✓ Shared"
+                                ) : (
+                                    "🔗 Save & Share"
+                                )}
+                            </button>
+                        )}
                     </div>
                 </div>
+
+                {shareUrl && (
+                    <div className="mb-12 p-4 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-center justify-between">
+                        <div>
+                            <p className="text-green-400 font-medium mb-1">Your public share link is ready!</p>
+                            <a href={shareUrl} target="_blank" rel="noreferrer" className="text-sm text-gray-300 hover:text-white underline decoration-gray-500 underline-offset-4">
+                                {shareUrl}
+                            </a>
+                        </div>
+                        <button
+                            onClick={() => {
+                                navigator.clipboard.writeText(shareUrl);
+                                alert("Copied to clipboard!");
+                            }}
+                            className="px-4 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-sm transition"
+                        >
+                            Copy Link
+                        </button>
+                    </div>
+                )}
 
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-40 space-y-4">

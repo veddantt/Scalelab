@@ -4,16 +4,7 @@ import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { saveSession, getSession } from "../../../lib/sessionStorage";
 
-const problems = [
-    "Design Uber",
-    "Design Twitter Feed",
-    "Design Netflix",
-    "Design WhatsApp",
-    "Design URL Shortener",
-    "Design Rate Limiter",
-    "Design Food Delivery App",
-    "Design Real-Time Chat App",
-];
+import { getScenario } from "../../../lib/scenarios";
 
 const steps = [
     "Requirements",
@@ -27,8 +18,9 @@ const steps = [
 
 export default function InterviewPage() {
     const params = useParams();
-    const problemId = Number(params.id);
-    const problem = problems[problemId] || "System Design Problem";
+    const problemId = params.id as string;
+    const scenario = getScenario(problemId);
+    const problem = scenario?.title || "System Design Problem";
 
     const [currentStep, setCurrentStep] = useState(0);
 
