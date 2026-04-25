@@ -17,6 +17,7 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import dagre from "dagre";
 import { getScenario } from "../../../lib/scenarios";
+import SaveButton from "../../components/SaveButton";
 import {
   Monitor,
   Shield,
@@ -332,7 +333,8 @@ export default function ArchitecturePage() {
           <h1 className="text-xl font-semibold text-white">{problem}</h1>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <SaveButton problemId={problemId as string} />
           {systemInsights?.score && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-900/60 border border-gray-800/50">
               <span className="text-xs text-gray-400">Score</span>

@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from "react";
 import { saveSession, getSession } from "../../../lib/sessionStorage";
 import { getScenario } from "../../../lib/scenarios";
 import Navbar from "../../components/Navbar";
+import SaveButton from "../../components/SaveButton";
 import { Loader2, Send, Lock, CheckCircle2, Lightbulb, Zap } from "lucide-react";
 
 const steps = [
@@ -278,6 +279,7 @@ export default function InterviewPage() {
               )}
             </div>
             <div className="flex items-center gap-2">
+              <SaveButton problemId={problemId} />
               <span className="text-xs text-gray-500 font-medium">
                 Step {currentStep + 1}/{steps.length}
               </span>

@@ -9,6 +9,7 @@ import { getScenario } from "../../../lib/scenarios";
 import { getSession } from "../../../lib/sessionStorage";
 import { supabase } from "../../../lib/supabase";
 import Navbar from "../../components/Navbar";
+import SaveButton from "../../components/SaveButton";
 
 export default function ReviewPage() {
     const params = useParams();
@@ -122,7 +123,8 @@ export default function ReviewPage() {
                         </div>
                         <h1 className="text-3xl font-bold">{problem}</h1>
                     </div>
-                    <div className="flex gap-4">
+                    <div className="flex gap-3">
+                        <SaveButton problemId={problemId} />
                         <a
                             href={`/architecture/${problemId}`}
                             className="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-xl transition text-sm font-medium"
