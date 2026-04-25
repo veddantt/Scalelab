@@ -2,142 +2,33 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState, useCallback, memo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getSession, saveSession } from "../../../lib/sessionStorage";
-import Navbar from "../../components/Navbar";
+import { getSession, saveSession } from "@/lib/sessionStorage";
+import Navbar from "@/components/Navbar";
+import SaveButton from "@/components/SaveButton";
 import ReactFlow, {
   Background,
   Controls,
   MiniMap,
-  MarkerType,
-  Handle,
-  Position,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import dagre from "dagre";
-import { getScenario } from "../../../lib/scenarios";
-import SaveButton from "../../components/SaveButton";
+import { getProblem } from "@/lib/scenarios";
+import { nodeTypeConfig, nodeTypes } from "@/features/architecture/components/CustomNode";
+import { getLayoutedElements, prepareNodes, prepareEdges } from "@/features/architecture/utils/layout";
 import {
-  Monitor,
-  Shield,
-  Server,
-  Database,
-  Zap,
-  Layers,
-  Cog,
-  HardDrive,
-  Globe,
-  Activity,
   AlertTriangle,
   ArrowLeftRight,
   TrendingUp,
 } from "lucide-react";
 
-// ─── Node type → icon + color mapping ───
-const nodeTypeConfig: Record<string, { icon: any; color: string; border: string }> = {
-  client:     { icon: Monitor,   color: "text-blue-400",   border: "border-blue-500/30" },
-  gateway:    { icon: Shield,    color: "text-purple-400", border: "border-purple-500/30" },
-  service:    { icon: Server,    color: "text-cyan-400",   border: "border-cyan-500/30" },
-  database:   { icon: Database,  color: "text-amber-400",  border: "border-amber-500/30" },
-  cache:      { icon: Zap,       color: "text-yellow-400", border: "border-yellow-500/30" },
-  queue:      { icon: Layers,    color: "text-orange-400", border: "border-orange-500/30" },
-  worker:     { icon: Cog,       color: "text-teal-400",   border: "border-teal-500/30" },
-  storage:    { icon: HardDrive, color: "text-emerald-400",border: "border-emerald-500/30" },
-  external:   { icon: Globe,     color: "text-indigo-400", border: "border-indigo-500/30" },
-  monitoring: { icon: Activity,  color: "text-pink-400",   border: "border-pink-500/30" },
-};
-
-// ─── Custom Node Component ───
-const CustomNode = memo(({ data }: { data: any }) => {
-  const config = nodeTypeConfig[data.type] || nodeTypeConfig.service;
-  const Icon = config.icon;
-
-  return (
-    <div
-      className={`px-4 py-3 rounded-2xl border ${config.border} bg-[#0f172a] shadow-lg hover:shadow-xl hover:border-opacity-60 transition-all duration-200 min-w-[170px] cursor-pointer group`}
-    >
-      <Handle type="target" position={Position.Left} className="!bg-gray-600 !w-2 !h-2 !border-0" />
-      <div className="flex items-center gap-2.5">
-        <div className={`${config.color} shrink-0`}>
-          <Icon className="w-4 h-4" />
-        </div>
-        <span className="text-white text-xs font-semibold leading-tight">
-          {data.label}
-        </span>
-      </div>
-      <Handle type="source" position={Position.Right} className="!bg-gray-600 !w-2 !h-2 !border-0" />
-    </div>
-  );
-});
-CustomNode.displayName = "CustomNode";
-
-const nodeTypes = { custom: CustomNode };
-
-// ─── Dagre Layout ───
-const NODE_W = 190;
-const NODE_H = 60;
-
-function getLayoutedElements(nodes: any[], edges: any[]) {
-  const g = new dagre.graphlib.Graph();
-  g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: "LR", nodesep: 70, ranksep: 160 });
-
-  nodes.forEach((n) => g.setNode(n.id, { width: NODE_W, height: NODE_H }));
-  edges.forEach((e) => g.setEdge(e.source, e.target));
-  dagre.layout(g);
-
-  const layoutedNodes = nodes.map((n) => {
-    const pos = g.node(n.id);
-    return { ...n, position: { x: pos.x - NODE_W / 2, y: pos.y - NODE_H / 2 } };
-  });
-
-  return { nodes: layoutedNodes, edges };
-}
-
-// ─── MOCK FALLBACK ───
-const FALLBACK_INSIGHTS = {
-  summary: "Standard 3-tier architecture with load balancing and caching.",
-  score: 72,
-  bottlenecks: [
-    "Single database write path under peak load",
-    "Cache invalidation delays causing stale reads",
-  ],
-  tradeoffs: [
-    "Chose PostgreSQL for ACID transactions, sacrificing horizontal write scalability",
-    "Added Redis for speed but introduced cache-invalidation complexity",
-  ],
-  scalingRecommendations: [
-    "Add read replicas to PostgreSQL and route read queries",
-    "Partition Kafka topics by entity ID for parallel consumers",
-    "Deploy application service behind auto-scaling load balancer",
-  ],
-};
-
-const FALLBACK_NODES = [
-  { id: "1", label: "Web Client",       type: "client" },
-  { id: "2", label: "API Gateway",      type: "gateway" },
-  { id: "3", label: "Core Service",     type: "service" },
-  { id: "4", label: "PostgreSQL",       type: "database" },
-  { id: "5", label: "Redis Cache",      type: "cache" },
-  { id: "6", label: "Message Queue",    type: "queue" },
-  { id: "7", label: "Background Worker", type: "worker" },
-];
-
-const FALLBACK_EDGES = [
-  { id: "e1-2", source: "1", target: "2", label: "HTTPS request" },
-  { id: "e2-3", source: "2", target: "3", label: "Route & forward" },
-  { id: "e3-4", source: "3", target: "4", label: "SQL read/write" },
-  { id: "e3-5", source: "3", target: "5", label: "Cache lookup" },
-  { id: "e3-6", source: "3", target: "6", label: "Publish event" },
-  { id: "e6-7", source: "6", target: "7", label: "Consume job" },
-];
 
 export default function ArchitecturePage() {
   const params = useParams();
   const router = useRouter();
   const problemId = params.id as string;
-  const scenario = getScenario(problemId);
+  const scenario = getProblem(problemId);
   const problem = scenario?.title || "System Design Problem";
 
   const [nodes, setNodes] = useState<any[]>([]);
@@ -151,34 +42,7 @@ export default function ArchitecturePage() {
   const [explanationLoading, setExplanationLoading] = useState(false);
   const [systemInsights, setSystemInsights] = useState<any | null>(null);
 
-  // ─── Prepare nodes for ReactFlow ───
-  function prepareNodes(rawNodes: any[]) {
-    return rawNodes.map((n: any) => ({
-      id: n.id,
-      type: "custom",
-      data: {
-        label: n.label || n.data?.label || "Unknown",
-        type: n.type || "service",
-        description: n.description || "",
-      },
-      position: n.position || { x: 0, y: 0 },
-    }));
-  }
-
-  function prepareEdges(rawEdges: any[]) {
-    return rawEdges.map((e: any) => ({
-      id: e.id || `e-${e.source}-${e.target}`,
-      source: e.source,
-      target: e.target,
-      label: e.label || "",
-      type: "smoothstep",
-      animated: true,
-      markerEnd: { type: MarkerType.ArrowClosed },
-      style: { stroke: "#475569", strokeWidth: 1.5 },
-      labelStyle: { fill: "#94a3b8", fontSize: 10, fontWeight: 500 },
-      labelBgStyle: { fill: "#020617", fillOpacity: 0.9 },
-    }));
-  }
+  // prepareNodes, prepareEdges, getLayoutedElements imported from features/architecture/utils/layout
 
   const loadFromSession = useCallback(() => {
     setLoading(true);
@@ -413,9 +277,9 @@ export default function ArchitecturePage() {
               {selectedNode.data?.type && (
                 <span
                   className={`inline-block text-xs px-2.5 py-1 rounded-full border mb-5 ${
-                    nodeTypeConfig[selectedNode.data.type]?.border || "border-gray-700"
+                    nodeTypeConfig[selectedNode.data.type as keyof typeof nodeTypeConfig]?.border || "border-gray-700"
                   } ${
-                    nodeTypeConfig[selectedNode.data.type]?.color || "text-gray-400"
+                    nodeTypeConfig[selectedNode.data.type as keyof typeof nodeTypeConfig]?.color || "text-gray-400"
                   } bg-gray-900/40`}
                 >
                   {selectedNode.data.type}

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "./AuthProvider";
-import AuthModal from "./AuthModal";
-import { getSession } from "../../lib/sessionStorage";
+import { useAuth } from "@/components/providers/AuthProvider";
+import AuthModal from "@/features/auth/components/AuthModal";
+import { getSession } from "@/lib/sessionStorage";
 import { Save, Loader2, Check, AlertCircle } from "lucide-react";
 
 interface SaveButtonProps {

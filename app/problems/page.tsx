@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { scenarios } from "../../lib/scenarios";
-import Navbar from "../components/Navbar";
+import { scenarios } from "@/lib/scenarios";
+import Navbar from "@/components/Navbar";
 import {
   Clock,
   ArrowRight,

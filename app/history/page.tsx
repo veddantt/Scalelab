@@ -4,11 +4,11 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "../components/AuthProvider";
-import AuthModal from "../components/AuthModal";
-import Navbar from "../components/Navbar";
-import { restoreSession } from "../../lib/sessionRestore";
-import { getScenario } from "../../lib/scenarios";
+import { useAuth } from "@/components/providers/AuthProvider";
+import AuthModal from "@/features/auth/components/AuthModal";
+import Navbar from "@/components/Navbar";
+import { restoreSession } from "@/lib/sessionRestore";
+import { getProblem } from "@/lib/scenarios";
 import {
   Clock,
   Trash2,
@@ -223,7 +223,7 @@ export default function HistoryPage() {
         {!loading && !error && user && sessions.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {sessions.map((s) => {
-              const scenario = getScenario(s.problem_id);
+              const scenario = getProblem(s.problem_id);
               const Icon = iconMap[s.problem_id] || Link2;
               const isCompleted = s.status === "completed";
               const hasArch =

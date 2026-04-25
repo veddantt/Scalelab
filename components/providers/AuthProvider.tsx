@@ -8,7 +8,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import { createClient } from "../../lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 interface AuthContextValue {

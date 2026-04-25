@@ -1,14 +1,6 @@
-export interface Scenario {
-  id: string;
-  title: string;
-  difficulty: "Beginner" | "Intermediate" | "Advanced";
-  description: string;
-  tags: string[];
-  estimatedMinutes: number;
-  examples: string[];
-}
+import type { Problem } from "@/lib/types";
 
-export const scenarios: Scenario[] = [
+export const problems: Problem[] = [
   {
     id: "url-shortener",
     title: "Design a URL Shortener",
@@ -71,6 +63,12 @@ export const scenarios: Scenario[] = [
   },
 ];
 
-export function getScenario(id: string): Scenario | undefined {
-  return scenarios.find((s) => s.id === id);
+export function getProblem(id: string): Problem | undefined {
+  return problems.find((p) => p.id === id);
 }
+
+// Legacy alias — kept so existing imports don't break during migration
+/** @deprecated Use `problems` and `getProblem` */
+export const scenarios = problems;
+/** @deprecated Use `getProblem` */
+export const getScenario = getProblem;

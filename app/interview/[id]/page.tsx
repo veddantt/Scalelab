@@ -4,45 +4,20 @@ export const dynamic = "force-dynamic";
 
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-import { saveSession, getSession } from "../../../lib/sessionStorage";
-import { getScenario } from "../../../lib/scenarios";
-import Navbar from "../../components/Navbar";
-import SaveButton from "../../components/SaveButton";
+import { saveSession, getSession } from "@/lib/sessionStorage";
+import { getProblem } from "@/lib/scenarios";
+import { INTERVIEW_STEPS, ARCHITECTURE_STYLES } from "@/lib/config/workflow";
+import Navbar from "@/components/Navbar";
+import SaveButton from "@/components/SaveButton";
 import { Loader2, Send, Lock, CheckCircle2, Lightbulb, Zap } from "lucide-react";
 
-const steps = [
-  { title: "Requirements", subtitle: "Core features & scope" },
-  { title: "Scale", subtitle: "Traffic & data sizing" },
-  { title: "APIs", subtitle: "Endpoints & contracts" },
-  { title: "Database", subtitle: "Schema & storage" },
-  { title: "Architecture", subtitle: "High-level components" },
-  { title: "Bottlenecks", subtitle: "Failure points & limits" },
-  { title: "Review", subtitle: "Final evaluation" },
-];
-
-const architectureStyles = [
-  {
-    id: "high-level",
-    label: "High-Level Design",
-    description: "Conceptual overview with major components",
-  },
-  {
-    id: "scalable-production",
-    label: "Scalable Production",
-    description: "Load balancers, caches, queues, workers",
-  },
-  {
-    id: "highly-available",
-    label: "Highly Available",
-    description: "Redundancy, failover, multi-region",
-  },
-];
+// Steps and architecture styles are imported from lib/config/workflow
 
 export default function InterviewPage() {
   const params = useParams();
   const router = useRouter();
   const problemId = params.id as string;
-  const scenario = getScenario(problemId);
+  const scenario = getProblem(problemId);
   const problem = scenario?.title;
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -142,12 +117,12 @@ export default function InterviewPage() {
       let newHighestStep = highestStep;
       let nextStep = currentStep;
 
-      if (data.shouldAdvance && currentStep < steps.length - 1) {
+      if (data.shouldAdvance && currentStep < INTERVIEW_STEPS.length - 1) {
         nextStep = currentStep + 1;
         newHighestStep = Math.max(highestStep, nextStep);
 
         // Toast then advance after short delay
-        const nextTitle = steps[nextStep]?.title ?? "Next Step";
+        const nextTitle = INTERVIEW_STEPS[nextStep]?.title ?? "Next Step";
         setToastMessage(`\u2713 Moving to: ${nextTitle}`);
         setTimeout(() => {
           setCurrentStep(nextStep);
@@ -281,10 +256,10 @@ export default function InterviewPage() {
             <div className="flex items-center gap-2">
               <SaveButton problemId={problemId} />
               <span className="text-xs text-gray-500 font-medium">
-                Step {currentStep + 1}/{steps.length}
+                Step {currentStep + 1}/{INTERVIEW_STEPS.length}
               </span>
               <span className="text-xs font-semibold text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">
-                {steps[currentStep].title}
+                {INTERVIEW_STEPS[currentStep].title}
               </span>
             </div>
           </div>
@@ -382,7 +357,7 @@ export default function InterviewPage() {
               </span>
             </div>
             <span className="text-[11px] font-semibold text-gray-500">
-              Step {currentStep + 1}/{steps.length}
+              Step {currentStep + 1}/{INTERVIEW_STEPS.length}
             </span>
           </div>
 
@@ -391,13 +366,13 @@ export default function InterviewPage() {
             <div className="flex justify-between items-center mb-1.5">
               <span className="text-[10px] text-gray-600 font-medium">Progress</span>
               <span className="text-[10px] font-bold text-purple-400">
-                {Math.round(((currentStep + 1) / steps.length) * 100)}%
+                {Math.round(((currentStep + 1) / INTERVIEW_STEPS.length) * 100)}%
               </span>
             </div>
             <div className="h-1.5 bg-gray-800/80 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-purple-600 to-blue-500 rounded-full transition-all duration-700"
-                style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+                style={{ width: `${((currentStep + 1) / INTERVIEW_STEPS.length) * 100}%` }}
               />
             </div>
           </div>
@@ -427,7 +402,7 @@ export default function InterviewPage() {
           {sidebarTab === "steps" && (
             <div className="space-y-4">
               <div className="space-y-1.5">
-                {steps.map((s, i) => {
+                {INTERVIEW_STEPS.map((s: typeof INTERVIEW_STEPS[number], i: number) => {
                   const isLocked = i > highestStep;
                   const isCompleted = i < currentStep;
                   const isCurrent = i === currentStep;
@@ -504,9 +479,9 @@ export default function InterviewPage() {
                         >
                           {s.subtitle}
                         </p>
-                        {isCurrent && i < steps.length - 1 && (
+                        {isCurrent && i < INTERVIEW_STEPS.length - 1 && (
                           <p className="text-[10px] text-purple-400/40 mt-1.5 italic">
-                            Answer this step to unlock {steps[i + 1].title} →
+                            Answer this step to unlock {INTERVIEW_STEPS[i + 1].title} →
                           </p>
                         )}
                       </div>
@@ -623,7 +598,7 @@ export default function InterviewPage() {
                 {highestStep < 4 ? `Complete ${4 - highestStep} more step${4 - highestStep > 1 ? "s" : ""} before generating.` : "Ready to generate your architecture diagram."}
               </p>
               <div className="space-y-1.5">
-                {architectureStyles.map((style) => (
+                {ARCHITECTURE_STYLES.map((style: typeof ARCHITECTURE_STYLES[number]) => (
                   <button key={style.id} onClick={() => setSelectedStyle(style.id)}
                     className={`w-full text-left px-3 py-2 rounded-xl border transition text-[12px] ${
                       selectedStyle === style.id ? "border-purple-500/40 bg-purple-500/10 text-white" : "border-gray-800/50 bg-gray-900/20 text-gray-400 hover:border-gray-700"

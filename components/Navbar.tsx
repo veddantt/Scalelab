@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "./AuthProvider";
-import AuthModal from "./AuthModal";
+import { useAuth } from "@/components/providers/AuthProvider";
+import AuthModal from "@/features/auth/components/AuthModal";
 import { Zap, History, LogOut, ChevronDown, User } from "lucide-react";
 
 export default function Navbar() {

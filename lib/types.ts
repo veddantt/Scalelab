@@ -1,6 +1,102 @@
-// ──────────────────────────────────────────────────────────────
-// Types for Supabase-backed interview persistence
-// ──────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
+// Centralized TypeScript types for ScaleLab
+// ─────────────────────────────────────────────────────────────────
+
+// ── Domain: Problems ──────────────────────────────────────────────
+
+export interface Problem {
+  id: string;
+  title: string;
+  difficulty: "Beginner" | "Intermediate" | "Advanced";
+  description: string;
+  tags: string[];
+  estimatedMinutes: number;
+  examples: string[];
+}
+
+// ── Domain: Interview ─────────────────────────────────────────────
+
+export interface InterviewStep {
+  title: string;
+  subtitle: string;
+  coachTip: string;
+}
+
+export interface InterviewMessage {
+  role: "user" | "ai";
+  content: string;
+  feedback?: string;
+}
+
+export interface InterviewScores {
+  clarity: number;
+  depth: number;
+  correctness: number;
+}
+
+export interface ArchitectureStyle {
+  id: string;
+  label: string;
+  description: string;
+}
+
+// ── Domain: Architecture ──────────────────────────────────────────
+
+export type NodeType =
+  | "client"
+  | "gateway"
+  | "service"
+  | "database"
+  | "cache"
+  | "queue"
+  | "worker"
+  | "storage"
+  | "external"
+  | "monitoring";
+
+export interface ArchitectureNode {
+  id: string;
+  label: string;
+  type: NodeType;
+  description?: string;
+}
+
+export interface ArchitectureEdge {
+  id?: string;
+  source: string;
+  target: string;
+  label?: string;
+}
+
+export interface ArchitectureInsights {
+  summary?: string;
+  score?: number;
+  bottlenecks?: string[];
+  tradeoffs?: string[];
+  scalingRecommendations?: string[];
+  isFallback?: boolean;
+}
+
+export interface NodeExplanation {
+  title: string;
+  role: string;
+  responsibilities: string[];
+  scalingNotes: string[];
+  failureRisks: string[];
+}
+
+// ── Domain: Review ────────────────────────────────────────────────
+
+export interface ReviewScore {
+  finalScore: number;
+  strengths: string[];
+  weaknesses: string[];
+  architectureSummary: string;
+  componentExplanations: { component: string; reasoning: string }[];
+  recommendedImprovements: string[];
+}
+
+// ── Supabase DB types (server-side) ──────────────────────────────
 
 export interface UserProfile {
   id: string;
@@ -41,8 +137,8 @@ export interface ArchitectureResult {
   session_id: string;
   summary: string | null;
   score: number | null;
-  nodes: any[];
-  edges: any[];
+  nodes: ArchitectureNode[];
+  edges: ArchitectureEdge[];
   bottlenecks: string[] | null;
   tradeoffs: string[] | null;
   scaling_recommendations: string[] | null;
@@ -57,7 +153,7 @@ export interface ReviewResult {
   strengths: string[] | null;
   weaknesses: string[] | null;
   architecture_summary: string | null;
-  component_explanations: any[] | null;
+  component_explanations: { component: string; reasoning: string }[] | null;
   recommended_improvements: string[] | null;
   created_at: string;
 }
@@ -76,28 +172,17 @@ export interface SaveSessionPayload {
   problem_title: string;
   status: SessionStatus;
   current_step: number;
-  scores: {
-    clarity: number;
-    depth: number;
-    correctness: number;
-  };
+  scores: InterviewScores;
   messages: { role: string; content: string; feedback?: string; step?: number }[];
   architecture?: {
     summary?: string;
     score?: number;
-    nodes: any[];
-    edges: any[];
+    nodes: ArchitectureNode[];
+    edges: ArchitectureEdge[];
     bottlenecks?: string[];
     tradeoffs?: string[];
     scalingRecommendations?: string[];
     isFallback?: boolean;
   };
-  review?: {
-    finalScore?: number;
-    strengths?: string[];
-    weaknesses?: string[];
-    architectureSummary?: string;
-    componentExplanations?: any[];
-    recommendedImprovements?: string[];
-  };
+  review?: Partial<ReviewScore>;
 }

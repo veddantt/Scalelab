@@ -5,16 +5,16 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
-import { getScenario } from "../../../lib/scenarios";
-import { getSession } from "../../../lib/sessionStorage";
-import { supabase } from "../../../lib/supabase";
-import Navbar from "../../components/Navbar";
-import SaveButton from "../../components/SaveButton";
+import { getProblem } from "@/lib/scenarios";
+import { getSession } from "@/lib/sessionStorage";
+import { supabase } from "@/lib/supabase";
+import Navbar from "@/components/Navbar";
+import SaveButton from "@/components/SaveButton";
 
 export default function ReviewPage() {
     const params = useParams();
     const problemId = params.id as string;
-    const scenario = getScenario(problemId);
+    const scenario = getProblem(problemId);
     const problem = scenario?.title;
 
     const [review, setReview] = useState<any>(null);
