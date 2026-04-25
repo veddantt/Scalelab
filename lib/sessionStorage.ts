@@ -8,10 +8,16 @@ export type ScaleLabSession = {
     correctness: number;
   };
   currentStep: number;
+  highestStep?: number;
   createdAt: string;
   architecture?: {
     nodes: any[];
     edges: any[];
+    summary?: string;
+    score?: number;
+    bottlenecks?: string[];
+    tradeoffs?: string[];
+    scalingRecommendations?: string[];
   };
   explanations?: Record<string, any>;
 };

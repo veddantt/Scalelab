@@ -1,19 +1,28 @@
-import { GoogleGenAI } from "@google/genai";
+const MOCK_FALLBACK = {
+    title: "Component",
+    role: "Core architectural component",
+    responsibilities: [
+        "Handles specific domain logic",
+        "Processes incoming requests or data"
+    ],
+    scalingNotes: [
+        "Can be scaled horizontally",
+        "Consider caching frequently accessed data"
+    ],
+    failureRisks: [
+        "Single point of failure if not deployed redundantly",
+        "Network latency under high load"
+    ]
+};
 
 export async function POST(req: Request) {
     try {
         const { problem, nodeLabel } = await req.json();
 
-        if (!process.env.GEMINI_API_KEY) {
-            return Response.json(
-                { error: "Missing GEMINI_API_KEY" },
-                { status: 500 }
-            );
+        if (!process.env.OPENROUTER_API_KEY) {
+            console.warn("Missing OPENROUTER_API_KEY, using fallback");
+            return Response.json(MOCK_FALLBACK);
         }
-
-        const ai = new GoogleGenAI({
-            apiKey: process.env.GEMINI_API_KEY,
-        });
 
         const prompt = `You are a senior system design interviewer.
 
@@ -22,32 +31,57 @@ Selected component: ${nodeLabel}
 
 Return ONLY valid JSON:
 {
-  "purpose": "1-2 sentence purpose",
-  "whyItMatters": "1-2 sentence explanation",
-  "interviewTalkingPoint": "1-2 sentence interview advice",
-  "scalingRisk": "1-2 sentence risk"
+  "title": "string",
+  "role": "string",
+  "responsibilities": ["string"],
+  "scalingNotes": ["string"],
+  "failureRisks": ["string"]
 }
 
-Be concise and practical.
-No markdown.`;
+Be concise and practical. No markdown.`;
 
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: prompt,
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                "Content-Type": "application/json",
+                "HTTP-Referer": "http://localhost:3000",
+                "X-Title": "ScaleLab",
+            },
+            body: JSON.stringify({
+                model: "deepseek/deepseek-chat",
+                messages: [
+                    {
+                        role: "system",
+                        content: prompt
+                    }
+                ],
+            }),
         });
 
-        const cleaned = (response.text || "")
-            .replace(/```json/g, "")
-            .replace(/```/g, "")
-            .trim();
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content;
 
-        return Response.json(JSON.parse(cleaned));
+        if (!content) {
+            console.error("No content in OpenRouter response:", data);
+            return Response.json(MOCK_FALLBACK);
+        }
+
+        let parsed;
+        try {
+            const cleaned = content
+                .replace(/```json/g, "")
+                .replace(/```/g, "")
+                .trim();
+            parsed = JSON.parse(cleaned);
+        } catch {
+            console.error("JSON parse failed, using fallback. Raw:", content.slice(0, 200));
+            return Response.json(MOCK_FALLBACK);
+        }
+
+        return Response.json(parsed);
     } catch (error: any) {
         console.error("Node explanation error:", error);
-
-        return Response.json(
-            { error: error?.message || "Failed to generate explanation" },
-            { status: 500 }
-        );
+        return Response.json(MOCK_FALLBACK);
     }
 }

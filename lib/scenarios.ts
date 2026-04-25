@@ -3,56 +3,71 @@ export interface Scenario {
   title: string;
   difficulty: "Beginner" | "Intermediate" | "Advanced";
   description: string;
+  tags: string[];
+  estimatedMinutes: number;
+  examples: string[];
 }
 
 export const scenarios: Scenario[] = [
   {
-    id: "uber",
-    title: "Design Uber",
-    difficulty: "Advanced",
-    description: "Design a ride-sharing service handling real-time geolocation, driver matching, and surge pricing.",
-  },
-  {
-    id: "twitter-feed",
-    title: "Design Twitter Feed",
-    difficulty: "Intermediate",
-    description: "Design a highly scalable news feed supporting millions of active users and celebrity fanout.",
-  },
-  {
-    id: "netflix",
-    title: "Design Netflix",
-    difficulty: "Advanced",
-    description: "Design a global video streaming platform with heavy CDN usage and personalized recommendations.",
-  },
-  {
-    id: "whatsapp",
-    title: "Design WhatsApp",
-    difficulty: "Intermediate",
-    description: "Design a real-time messaging system supporting online users, delivery status, and message history.",
-  },
-  {
     id: "url-shortener",
     title: "Design a URL Shortener",
     difficulty: "Beginner",
-    description: "Design a scalable URL shortener like bit.ly with low latency reads and high availability.",
+    description:
+      "Design a scalable URL shortener like bit.ly with low-latency reads, high availability, and analytics tracking.",
+    tags: ["Hashing", "Key-Value Store", "CDN"],
+    estimatedMinutes: 25,
+    examples: ["bit.ly", "TinyURL", "t.co"],
   },
   {
-    id: "rate-limiter",
-    title: "Design a Rate Limiter",
-    difficulty: "Advanced",
-    description: "Design a distributed rate limiter for APIs handling millions of requests per day.",
+    id: "real-time-chat",
+    title: "Design a Real-Time Chat App",
+    difficulty: "Intermediate",
+    description:
+      "Design a messaging platform like Slack or WhatsApp supporting presence, delivery receipts, and group chats.",
+    tags: ["WebSockets", "Pub/Sub", "Message Queue"],
+    estimatedMinutes: 35,
+    examples: ["WhatsApp", "Slack", "Discord"],
   },
   {
     id: "food-delivery",
-    title: "Design a Food Delivery App",
+    title: "Design a Food Delivery Platform",
     difficulty: "Intermediate",
-    description: "Design a platform with restaurants, customers, drivers, live order tracking, and payments.",
+    description:
+      "Design a platform like DoorDash with restaurants, customers, drivers, live order tracking, and payments.",
+    tags: ["Geolocation", "Microservices", "Event-Driven"],
+    estimatedMinutes: 40,
+    examples: ["DoorDash", "Uber Eats", "Zomato"],
   },
   {
-    id: "web-crawler",
-    title: "Design a Web Crawler",
+    id: "rate-limiter",
+    title: "Design a Distributed Rate Limiter",
     difficulty: "Advanced",
-    description: "Design a distributed web crawler that can scrape billions of web pages efficiently.",
+    description:
+      "Design a distributed rate limiter for APIs handling millions of requests per second with token bucket or sliding window algorithms.",
+    tags: ["Distributed Systems", "Redis", "Algorithms"],
+    estimatedMinutes: 30,
+    examples: ["Stripe", "Cloudflare", "Kong API Gateway"],
+  },
+  {
+    id: "file-storage",
+    title: "Design a File Storage System",
+    difficulty: "Intermediate",
+    description:
+      "Design a cloud file storage service like Google Drive or Dropbox with upload, sync, sharing, and versioning.",
+    tags: ["Object Storage", "Chunking", "Sync"],
+    estimatedMinutes: 35,
+    examples: ["Google Drive", "Dropbox", "OneDrive"],
+  },
+  {
+    id: "notification-system",
+    title: "Design a Notification System",
+    difficulty: "Intermediate",
+    description:
+      "Design a multi-channel notification system supporting push, email, SMS, and in-app notifications at scale.",
+    tags: ["Event-Driven", "Queue", "Fanout"],
+    estimatedMinutes: 30,
+    examples: ["Firebase Cloud Messaging", "SendGrid", "Twilio"],
   },
 ];
 

@@ -1,366 +1,556 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, memo } from "react";
 import { useParams } from "next/navigation";
 import { getSession, saveSession } from "../../../lib/sessionStorage";
 import ReactFlow, {
-    Background,
-    Controls,
-    MiniMap,
-    MarkerType,
+  Background,
+  Controls,
+  MiniMap,
+  MarkerType,
+  Handle,
+  Position,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import dagre from "dagre";
-
 import { getScenario } from "../../../lib/scenarios";
+import {
+  Monitor,
+  Shield,
+  Server,
+  Database,
+  Zap,
+  Layers,
+  Cog,
+  HardDrive,
+  Globe,
+  Activity,
+  AlertTriangle,
+  ArrowLeftRight,
+  TrendingUp,
+} from "lucide-react";
 
-const nodeWidth = 190;
-const nodeHeight = 70;
+// ─── Node type → icon + color mapping ───
+const nodeTypeConfig: Record<string, { icon: any; color: string; border: string }> = {
+  client:     { icon: Monitor,   color: "text-blue-400",   border: "border-blue-500/30" },
+  gateway:    { icon: Shield,    color: "text-purple-400", border: "border-purple-500/30" },
+  service:    { icon: Server,    color: "text-cyan-400",   border: "border-cyan-500/30" },
+  database:   { icon: Database,  color: "text-amber-400",  border: "border-amber-500/30" },
+  cache:      { icon: Zap,       color: "text-yellow-400", border: "border-yellow-500/30" },
+  queue:      { icon: Layers,    color: "text-orange-400", border: "border-orange-500/30" },
+  worker:     { icon: Cog,       color: "text-teal-400",   border: "border-teal-500/30" },
+  storage:    { icon: HardDrive, color: "text-emerald-400",border: "border-emerald-500/30" },
+  external:   { icon: Globe,     color: "text-indigo-400", border: "border-indigo-500/30" },
+  monitoring: { icon: Activity,  color: "text-pink-400",   border: "border-pink-500/30" },
+};
+
+// ─── Custom Node Component ───
+const CustomNode = memo(({ data }: { data: any }) => {
+  const config = nodeTypeConfig[data.type] || nodeTypeConfig.service;
+  const Icon = config.icon;
+
+  return (
+    <div
+      className={`px-4 py-3 rounded-2xl border ${config.border} bg-[#0f172a] shadow-lg hover:shadow-xl hover:border-opacity-60 transition-all duration-200 min-w-[170px] cursor-pointer group`}
+    >
+      <Handle type="target" position={Position.Left} className="!bg-gray-600 !w-2 !h-2 !border-0" />
+      <div className="flex items-center gap-2.5">
+        <div className={`${config.color} shrink-0`}>
+          <Icon className="w-4 h-4" />
+        </div>
+        <span className="text-white text-xs font-semibold leading-tight">
+          {data.label}
+        </span>
+      </div>
+      <Handle type="source" position={Position.Right} className="!bg-gray-600 !w-2 !h-2 !border-0" />
+    </div>
+  );
+});
+CustomNode.displayName = "CustomNode";
+
+const nodeTypes = { custom: CustomNode };
+
+// ─── Dagre Layout ───
+const NODE_W = 190;
+const NODE_H = 60;
 
 function getLayoutedElements(nodes: any[], edges: any[]) {
-    const dagreGraph = new dagre.graphlib.Graph();
+  const g = new dagre.graphlib.Graph();
+  g.setDefaultEdgeLabel(() => ({}));
+  g.setGraph({ rankdir: "LR", nodesep: 70, ranksep: 160 });
 
-    dagreGraph.setDefaultEdgeLabel(() => ({}));
+  nodes.forEach((n) => g.setNode(n.id, { width: NODE_W, height: NODE_H }));
+  edges.forEach((e) => g.setEdge(e.source, e.target));
+  dagre.layout(g);
 
-    dagreGraph.setGraph({
-        rankdir: "LR",
-        nodesep: 80,
-        ranksep: 140,
-    });
+  const layoutedNodes = nodes.map((n) => {
+    const pos = g.node(n.id);
+    return { ...n, position: { x: pos.x - NODE_W / 2, y: pos.y - NODE_H / 2 } };
+  });
 
-    nodes.forEach((node) => {
-        dagreGraph.setNode(node.id, {
-            width: nodeWidth,
-            height: nodeHeight,
-        });
-    });
-
-    edges.forEach((edge) => {
-        dagreGraph.setEdge(edge.source, edge.target);
-    });
-
-    dagre.layout(dagreGraph);
-
-    const layoutedNodes = nodes.map((node) => {
-        const nodeWithPosition = dagreGraph.node(node.id);
-
-        return {
-            ...node,
-            position: {
-                x: nodeWithPosition.x - nodeWidth / 2,
-                y: nodeWithPosition.y - nodeHeight / 2,
-            },
-        };
-    });
-
-    return { nodes: layoutedNodes, edges };
+  return { nodes: layoutedNodes, edges };
 }
 
+// ─── MOCK FALLBACK ───
+const FALLBACK_INSIGHTS = {
+  summary: "Standard 3-tier architecture with load balancing and caching.",
+  score: 72,
+  bottlenecks: [
+    "Single database write path under peak load",
+    "Cache invalidation delays causing stale reads",
+  ],
+  tradeoffs: [
+    "Chose PostgreSQL for ACID transactions, sacrificing horizontal write scalability",
+    "Added Redis for speed but introduced cache-invalidation complexity",
+  ],
+  scalingRecommendations: [
+    "Add read replicas to PostgreSQL and route read queries",
+    "Partition Kafka topics by entity ID for parallel consumers",
+    "Deploy application service behind auto-scaling load balancer",
+  ],
+};
+
+const FALLBACK_NODES = [
+  { id: "1", label: "Web Client",       type: "client" },
+  { id: "2", label: "API Gateway",      type: "gateway" },
+  { id: "3", label: "Core Service",     type: "service" },
+  { id: "4", label: "PostgreSQL",       type: "database" },
+  { id: "5", label: "Redis Cache",      type: "cache" },
+  { id: "6", label: "Message Queue",    type: "queue" },
+  { id: "7", label: "Background Worker", type: "worker" },
+];
+
+const FALLBACK_EDGES = [
+  { id: "e1-2", source: "1", target: "2", label: "HTTPS request" },
+  { id: "e2-3", source: "2", target: "3", label: "Route & forward" },
+  { id: "e3-4", source: "3", target: "4", label: "SQL read/write" },
+  { id: "e3-5", source: "3", target: "5", label: "Cache lookup" },
+  { id: "e3-6", source: "3", target: "6", label: "Publish event" },
+  { id: "e6-7", source: "6", target: "7", label: "Consume job" },
+];
+
 export default function ArchitecturePage() {
-    const params = useParams();
-    const problemId = params.id as string;
-    const scenario = getScenario(problemId);
-    const problem = scenario?.title || "System Design Problem";
+  const params = useParams();
+  const problemId = params.id as string;
+  const scenario = getScenario(problemId);
+  const problem = scenario?.title || "System Design Problem";
 
-    const [nodes, setNodes] = useState<any[]>([]);
-    const [edges, setEdges] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [selectedNode, setSelectedNode] = useState<any | null>(null);
-    const [nodeExplanation, setNodeExplanation] = useState<any | null>(null);
-    const [explanationLoading, setExplanationLoading] = useState(false);
+  const [nodes, setNodes] = useState<any[]>([]);
+  const [edges, setEdges] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedNode, setSelectedNode] = useState<any | null>(null);
+  const [nodeExplanation, setNodeExplanation] = useState<any | null>(null);
+  const [explanationLoading, setExplanationLoading] = useState(false);
+  const [systemInsights, setSystemInsights] = useState<any | null>(null);
 
-    const generateArchitecture = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const session = getSession(String(problemId));
-            const messages = session ? session.messages : [];
+  // ─── Prepare nodes for ReactFlow ───
+  function prepareNodes(rawNodes: any[]) {
+    return rawNodes.map((n: any) => ({
+      id: n.id,
+      type: "custom",
+      data: {
+        label: n.label || n.data?.label || "Unknown",
+        type: n.type || "service",
+        description: n.description || "",
+      },
+      position: n.position || { x: 0, y: 0 },
+    }));
+  }
 
-            if (session?.architecture) {
-                const layouted = getLayoutedElements(session.architecture.nodes, session.architecture.edges);
-                setNodes(layouted.nodes);
-                setEdges(layouted.edges);
-                setLoading(false);
-                return;
-            }
+  function prepareEdges(rawEdges: any[]) {
+    return rawEdges.map((e: any) => ({
+      id: e.id || `e-${e.source}-${e.target}`,
+      source: e.source,
+      target: e.target,
+      label: e.label || "",
+      type: "smoothstep",
+      animated: true,
+      markerEnd: { type: MarkerType.ArrowClosed },
+      style: { stroke: "#475569", strokeWidth: 1.5 },
+      labelStyle: { fill: "#94a3b8", fontSize: 10, fontWeight: 500 },
+      labelBgStyle: { fill: "#020617", fillOpacity: 0.9 },
+    }));
+  }
 
-            const res = await fetch("/api/architecture", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ problem, messages }),
-            });
+  const generateArchitecture = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const session = getSession(String(problemId));
+      const messages = session ? session.messages : [];
 
-            const data = await res.json();
+      // Check cache
+      if (session?.architecture?.nodes?.length) {
+        const prepared = prepareNodes(session.architecture.nodes);
+        const styledEdges = prepareEdges(session.architecture.edges);
+        const layouted = getLayoutedElements(prepared, styledEdges);
+        setNodes(layouted.nodes);
+        setEdges(layouted.edges);
+        setSystemInsights({
+          summary: session.architecture.summary,
+          score: session.architecture.score,
+          bottlenecks: session.architecture.bottlenecks,
+          tradeoffs: session.architecture.tradeoffs,
+          scalingRecommendations: session.architecture.scalingRecommendations,
+        });
+        setLoading(false);
+        return;
+      }
 
-            if (!res.ok) {
-                const msg = typeof data.error === "object"
-                    ? data.error.message
-                    : data.error || "Failed to generate architecture";
-                throw new Error(msg);
-            }
+      // Get architecture style
+      const archStyle =
+        typeof window !== "undefined"
+          ? sessionStorage.getItem(`arch-style-${problemId}`) || "scalable-production"
+          : "scalable-production";
 
-            const styledNodes = (data.nodes || []).map((node: any) => ({
-                ...node,
-                style: {
-                    background: "#0f172a",
-                    color: "#ffffff",
-                    border: "1px solid #334155",
-                    borderRadius: 14,
-                    padding: 14,
-                    width: 190,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    boxShadow: "0 12px 30px rgba(0,0,0,0.35)",
-                },
-            }));
+      const res = await fetch("/api/architecture", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          problem,
+          messages,
+          architectureStyle: archStyle,
+        }),
+      });
 
-            const styledEdges = (data.edges || []).map((edge: any) => ({
-                ...edge,
-                type: "smoothstep",
-                animated: true,
-                markerEnd: {
-                    type: MarkerType.ArrowClosed,
-                },
-                style: {
-                    stroke: "#64748b",
-                    strokeWidth: 2,
-                },
-                labelStyle: {
-                    fill: "#cbd5e1",
-                    fontSize: 11,
-                    fontWeight: 600,
-                },
-                labelBgStyle: {
-                    fill: "#020617",
-                    fillOpacity: 0.9,
-                },
-            }));
+      const data = await res.json();
 
-            if (session) {
-                session.architecture = { nodes: styledNodes, edges: styledEdges };
-                saveSession(session);
-            }
+      const prepared = prepareNodes(data.nodes || []);
+      const styledEdges = prepareEdges(data.edges || []);
+      const layouted = getLayoutedElements(prepared, styledEdges);
 
-            const layouted = getLayoutedElements(styledNodes, styledEdges);
+      // Cache in session
+      if (session) {
+        session.architecture = {
+          nodes: data.nodes || [],
+          edges: data.edges || [],
+          summary: data.summary,
+          score: data.score,
+          bottlenecks: data.bottlenecks,
+          tradeoffs: data.tradeoffs,
+          scalingRecommendations: data.scalingRecommendations,
+        };
+        saveSession(session);
+      }
 
-            setNodes(layouted.nodes);
-            setEdges(layouted.edges);
-        } catch (error) {
-            console.error(error);
+      setNodes(layouted.nodes);
+      setEdges(layouted.edges);
+      setSystemInsights({
+        summary: data.summary,
+        score: data.score,
+        bottlenecks: data.bottlenecks,
+        tradeoffs: data.tradeoffs,
+        scalingRecommendations: data.scalingRecommendations,
+      });
+    } catch (err) {
+      console.error(err);
 
-            const fallbackNodes = [
-                { id: "1", data: { label: "Client App" } },
-                { id: "2", data: { label: "API Gateway" } },
-                { id: "3", data: { label: "Core Service" } },
-                { id: "4", data: { label: "PostgreSQL Database" } },
-                { id: "5", data: { label: "Redis Cache" } },
-                { id: "6", data: { label: "Message Queue" } },
-            ];
+      // Use fallback
+      const prepared = prepareNodes(FALLBACK_NODES);
+      const styledEdges = prepareEdges(FALLBACK_EDGES);
+      const layouted = getLayoutedElements(prepared, styledEdges);
 
-            const fallbackEdges = [
-                { id: "e1-2", source: "1", target: "2", label: "HTTP" },
-                { id: "e2-3", source: "2", target: "3", label: "Route" },
-                { id: "e3-4", source: "3", target: "4", label: "Read/Write" },
-                { id: "e3-5", source: "3", target: "5", label: "Cache" },
-                { id: "e3-6", source: "3", target: "6", label: "Async Events" },
-            ];
+      setNodes(layouted.nodes);
+      setEdges(layouted.edges);
+      setSystemInsights(FALLBACK_INSIGHTS);
+    } finally {
+      setLoading(false);
+    }
+  }, [problemId, problem]);
 
-            const fallbackStyledNodes = fallbackNodes.map((node: any) => ({
-                ...node,
-                style: {
-                    background: "#0f172a",
-                    color: "#ffffff",
-                    border: "1px solid #334155",
-                    borderRadius: 14,
-                    padding: 14,
-                    width: 190,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    boxShadow: "0 12px 30px rgba(0,0,0,0.35)",
-                },
-            }));
+  const handleNodeClick = async (_: any, node: any) => {
+    setSelectedNode(node);
+    setNodeExplanation(null);
+    setExplanationLoading(true);
 
-            const fallbackStyledEdges = fallbackEdges.map((edge: any) => ({
-                ...edge,
-                type: "smoothstep",
-                animated: true,
-                style: {
-                    stroke: "#64748b",
-                    strokeWidth: 2,
-                },
-            }));
+    const nodeLabel = node.data?.label;
+    if (!nodeLabel) {
+      setExplanationLoading(false);
+      return;
+    }
 
-            const layouted = getLayoutedElements(fallbackStyledNodes, fallbackStyledEdges);
+    // Check cache
+    const session = getSession(String(problemId));
+    if (session?.explanations?.[nodeLabel]) {
+      setNodeExplanation(session.explanations[nodeLabel]);
+      setExplanationLoading(false);
+      return;
+    }
 
-            setNodes(layouted.nodes);
-            setEdges(layouted.edges);
-        } finally {
-            setLoading(false);
-        }
-    }, [problemId, problem]);
+    try {
+      const res = await fetch("/api/node-explanation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ problem, nodeLabel }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to explain node");
 
-    const handleNodeClick = async (_: any, node: any) => {
-        setSelectedNode(node);
-        setNodeExplanation(null);
-        setExplanationLoading(true);
+      if (session) {
+        if (!session.explanations) session.explanations = {};
+        session.explanations[nodeLabel] = data;
+        saveSession(session);
+      }
 
-        const nodeLabel = node.data?.label;
-        if (!nodeLabel) {
-            setExplanationLoading(false);
-            return;
-        }
+      setNodeExplanation(data);
+    } catch (error) {
+      console.error(error);
+      setNodeExplanation({
+        title: "Component",
+        role: "Core architectural component",
+        responsibilities: [
+            "Handles specific domain logic",
+            "Processes incoming requests or data"
+        ],
+        scalingNotes: [
+            "Can be scaled horizontally",
+            "Consider caching frequently accessed data"
+        ],
+        failureRisks: [
+            "Single point of failure if not deployed redundantly",
+            "Network latency under high load"
+        ]
+      });
+    } finally {
+      setExplanationLoading(false);
+    }
+  };
 
-        const session = getSession(String(problemId));
-        if (session?.explanations?.[nodeLabel]) {
-            setNodeExplanation(session.explanations[nodeLabel]);
-            setExplanationLoading(false);
-            return;
-        }
+  useEffect(() => {
+    generateArchitecture();
+  }, [generateArchitecture]);
 
-        try {
-            const res = await fetch("/api/node-explanation", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ problem, nodeLabel }),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Failed to explain node");
+  return (
+    <main className="h-screen bg-[#020617] text-white flex flex-col">
+      {/* ─── Header ─── */}
+      <div className="px-6 py-4 border-b border-gray-800/50 bg-black/40 backdrop-blur-md flex items-center justify-between shadow-sm z-10">
+        <div className="flex flex-col">
+          <span className="text-purple-400 text-xs font-bold tracking-widest uppercase mb-1">
+            Architecture Workspace
+          </span>
+          <h1 className="text-xl font-semibold text-white">{problem}</h1>
+        </div>
 
-            if (session) {
-                if (!session.explanations) session.explanations = {};
-                session.explanations[nodeLabel] = data;
-                saveSession(session);
-            }
-
-            setNodeExplanation(data);
-        } catch (error) {
-            console.error(error);
-            setNodeExplanation({
-                purpose: "This component handles a core responsibility in the architecture.",
-                whyItMatters: "It helps separate concerns and keeps the system easier to scale.",
-                interviewTalkingPoint: "Explain what data it owns, which services call it, and how it behaves under high traffic.",
-                scalingRisk: "If overloaded, this component may become a bottleneck without caching, replication, or async processing.",
-            });
-        } finally {
-            setExplanationLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        generateArchitecture();
-    }, [generateArchitecture]);
-
-    return (
-        <main className="h-screen bg-[#020617] text-white flex flex-col">
-            <div className="px-6 py-4 border-b border-gray-800/50 bg-black/40 backdrop-blur-md flex items-center justify-between shadow-sm z-10">
-                <div className="flex flex-col">
-                    <span className="text-purple-400 text-xs font-bold tracking-widest uppercase mb-1">Architecture Workspace</span>
-                    <h1 className="text-xl font-semibold text-white">{problem}</h1>
-                </div>
-
-                <div className="flex items-center gap-4">
-                    <a
-                        href={`/interview/${problemId}`}
-                        className="text-sm text-gray-400 hover:text-white transition-colors"
-                    >
-                        ← Back to Interview
-                    </a>
-                    <a
-                        href={`/review/${problemId}`}
-                        className="px-5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium text-sm transition-all shadow-lg hover:shadow-purple-500/25"
-                    >
-                        Finish & Get Review →
-                    </a>
-                </div>
+        <div className="flex items-center gap-4">
+          {systemInsights?.score && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-900/60 border border-gray-800/50">
+              <span className="text-xs text-gray-400">Score</span>
+              <span className="text-sm font-bold text-white">
+                {systemInsights.score}/100
+              </span>
             </div>
+          )}
+          <a
+            href={`/interview/${problemId}`}
+            className="text-sm text-gray-400 hover:text-white transition-colors"
+          >
+            ← Interview
+          </a>
+          <a
+            href={`/review/${problemId}`}
+            className="px-5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium text-sm transition-all shadow-lg hover:shadow-purple-500/25"
+          >
+            Finish & Get Review →
+          </a>
+        </div>
+      </div>
 
-            <div className="flex-1 flex">
-                <div className="flex-1">
-                    {loading ? (
-                        <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-4">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
-                            <p>Generating personalized architecture...</p>
-                        </div>
-                    ) : error ? (
-                        <div className="h-full flex flex-col items-center justify-center gap-4 bg-gray-900/30">
-                            <div className="text-red-400 text-center max-w-md p-6 border border-red-500/20 bg-red-500/10 rounded-xl">
-                                <p className="font-semibold mb-2">Generation Failed</p>
-                                <p className="text-sm opacity-90">{error}</p>
-                            </div>
-                            <button
-                                onClick={generateArchitecture}
-                                className="px-6 py-2 bg-white text-black font-medium rounded-xl hover:bg-gray-200 transition"
-                            >
-                                Retry Generation
-                            </button>
-                        </div>
-                    ) : (
-                        <ReactFlow
-                            nodes={nodes}
-                            edges={edges}
-                            fitView
-                            fitViewOptions={{ padding: 0.25 }}
-                            proOptions={{ hideAttribution: true }}
-                            onNodeClick={handleNodeClick}
-                            onPaneClick={() => setSelectedNode(null)}
-                        >
-                            <Background color="#334155" gap={24} size={1} />
-                            <Controls />
-                            <MiniMap
-                                nodeColor={() => "#1e293b"}
-                                maskColor="rgba(2, 6, 23, 0.75)"
-                            />
-                        </ReactFlow>
-                    )}
-                </div>
-
-                <aside className="w-[360px] border-l border-gray-800 bg-[#020617] p-6">
-                    {selectedNode ? (
-                        <>
-                            <p className="text-xs uppercase tracking-[0.2em] text-purple-400 mb-3">
-                                Component
-                            </p>
-
-                            <h2 className="text-2xl font-bold mb-4">
-                                {selectedNode.data?.label}
-                            </h2>
-
-                            {explanationLoading ? (
-                                <div className="flex items-center gap-3 text-gray-500 text-sm">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500"></div>
-                                    Generating explanation...
-                                </div>
-                            ) : nodeExplanation ? (
-                                <div className="space-y-5 text-sm text-gray-300 leading-relaxed">
-                                    <div>
-                                        <h3 className="text-white font-semibold mb-2">Purpose</h3>
-                                        <p>{nodeExplanation.purpose}</p>
-                                    </div>
-                                    <div>
-                                        <h3 className="text-white font-semibold mb-2">Why it matters</h3>
-                                        <p>{nodeExplanation.whyItMatters}</p>
-                                    </div>
-                                    <div>
-                                        <h3 className="text-white font-semibold mb-2">Interview talking point</h3>
-                                        <p>{nodeExplanation.interviewTalkingPoint}</p>
-                                    </div>
-                                    <div>
-                                        <h3 className="text-white font-semibold mb-2">Scaling risk</h3>
-                                        <p>{nodeExplanation.scalingRisk}</p>
-                                    </div>
-                                </div>
-                            ) : null}
-                        </>
-                    ) : (
-                        <div className="h-full flex items-center text-gray-500">
-                            Click a component to inspect its role, tradeoffs, and interview talking points.
-                        </div>
-                    )}
-                </aside>
+      {/* ─── Main ─── */}
+      <div className="flex-1 flex min-h-0">
+        {/* Canvas */}
+        <div className="flex-1">
+          {loading ? (
+            <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
+              <p className="text-sm">Generating personalized architecture...</p>
+              <p className="text-xs text-gray-600">
+                This may take a few seconds
+              </p>
             </div>
-        </main>
-    );
+          ) : error ? (
+            <div className="h-full flex flex-col items-center justify-center gap-4">
+              <div className="text-red-400 text-center max-w-md p-6 border border-red-500/20 bg-red-500/5 rounded-2xl">
+                <p className="font-semibold mb-2">Generation Failed</p>
+                <p className="text-sm text-gray-400">{error}</p>
+              </div>
+              <button
+                onClick={generateArchitecture}
+                className="px-6 py-2 bg-white text-black font-medium rounded-xl hover:bg-gray-200 transition"
+              >
+                Retry
+              </button>
+            </div>
+          ) : (
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              nodeTypes={nodeTypes}
+              fitView
+              fitViewOptions={{ padding: 0.3 }}
+              proOptions={{ hideAttribution: true }}
+              onNodeClick={handleNodeClick}
+              onPaneClick={() => setSelectedNode(null)}
+            >
+              <Background color="#1e293b" gap={24} size={1} />
+              <Controls className="!bg-gray-900 !border-gray-700 !rounded-xl" />
+              <MiniMap
+                nodeColor={() => "#1e293b"}
+                maskColor="rgba(2, 6, 23, 0.8)"
+                className="!bg-gray-900 !border-gray-700 !rounded-xl"
+              />
+            </ReactFlow>
+          )}
+        </div>
+
+        {/* ─── Right Panel ─── */}
+        <aside className="w-[380px] border-l border-gray-800/50 bg-[#020617] overflow-y-auto">
+          {selectedNode ? (
+            <div className="p-6">
+              <p className="text-xs uppercase tracking-[0.2em] text-purple-400 mb-2">
+                Component Inspector
+              </p>
+              <h2 className="text-2xl font-bold mb-1">
+                {selectedNode.data?.label}
+              </h2>
+              {selectedNode.data?.type && (
+                <span
+                  className={`inline-block text-xs px-2.5 py-1 rounded-full border mb-5 ${
+                    nodeTypeConfig[selectedNode.data.type]?.border || "border-gray-700"
+                  } ${
+                    nodeTypeConfig[selectedNode.data.type]?.color || "text-gray-400"
+                  } bg-gray-900/40`}
+                >
+                  {selectedNode.data.type}
+                </span>
+              )}
+
+              {selectedNode.data?.description && (
+                <p className="text-sm text-gray-400 mb-6 leading-relaxed">
+                  {selectedNode.data.description}
+                </p>
+              )}
+
+              {explanationLoading ? (
+                <div className="flex items-center gap-3 text-gray-500 text-sm">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-500" />
+                  Generating explanation...
+                </div>
+              ) : nodeExplanation ? (
+                <div className="space-y-5 text-sm text-gray-300 leading-relaxed">
+                  <div>
+                    <h3 className="text-white font-semibold mb-1.5">Role</h3>
+                    <p>{nodeExplanation.role}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold mb-1.5">Responsibilities</h3>
+                    <ul className="list-disc pl-4 space-y-1 text-gray-400">
+                      {nodeExplanation.responsibilities?.map((r: string, i: number) => <li key={i}>{r}</li>)}
+                    </ul>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold mb-1.5">Scaling Notes</h3>
+                    <ul className="list-disc pl-4 space-y-1 text-gray-400">
+                      {nodeExplanation.scalingNotes?.map((r: string, i: number) => <li key={i}>{r}</li>)}
+                    </ul>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold mb-1.5">Failure Risks</h3>
+                    <ul className="list-disc pl-4 space-y-1 text-gray-400">
+                      {nodeExplanation.failureRisks?.map((r: string, i: number) => <li key={i}>{r}</li>)}
+                    </ul>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : systemInsights ? (
+            <div className="p-6 space-y-6">
+              <p className="text-xs uppercase tracking-[0.2em] text-purple-400">
+                System Analysis
+              </p>
+
+              {/* Summary */}
+              <div>
+                <h3 className="text-white font-semibold mb-2">Summary</h3>
+                <p className="text-sm text-gray-400 leading-relaxed">
+                  {systemInsights.summary}
+                </p>
+              </div>
+
+              {/* Bottlenecks */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle className="w-4 h-4 text-red-400" />
+                  <h3 className="text-red-400 font-semibold">Bottlenecks</h3>
+                </div>
+                <ul className="space-y-2">
+                  {systemInsights.bottlenecks?.map((b: string, i: number) => (
+                    <li
+                      key={i}
+                      className="text-sm text-gray-400 pl-4 border-l-2 border-red-500/20 py-1"
+                    >
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Tradeoffs */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <ArrowLeftRight className="w-4 h-4 text-blue-400" />
+                  <h3 className="text-blue-400 font-semibold">Tradeoffs</h3>
+                </div>
+                <ul className="space-y-2">
+                  {systemInsights.tradeoffs?.map((t: string, i: number) => (
+                    <li
+                      key={i}
+                      className="text-sm text-gray-400 pl-4 border-l-2 border-blue-500/20 py-1"
+                    >
+                      {t}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Scaling Recommendations */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="w-4 h-4 text-green-400" />
+                  <h3 className="text-green-400 font-semibold">
+                    Scaling Recommendations
+                  </h3>
+                </div>
+                <ul className="space-y-2">
+                  {systemInsights.scalingRecommendations?.map(
+                    (r: string, i: number) => (
+                      <li
+                        key={i}
+                        className="text-sm text-gray-400 pl-4 border-l-2 border-green-500/20 py-1"
+                      >
+                        {r}
+                      </li>
+                    )
+                  )}
+                </ul>
+              </div>
+
+              <div className="pt-4 border-t border-gray-800/50">
+                <p className="text-gray-500 text-xs italic">
+                  Click any node on the canvas for component-level insights.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="h-full flex items-center justify-center p-6">
+              <p className="text-gray-500 text-sm text-center">
+                Click a component to inspect its role, tradeoffs, and interview
+                talking points.
+              </p>
+            </div>
+          )}
+        </aside>
+      </div>
+    </main>
+  );
 }
