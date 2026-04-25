@@ -1,0 +1,108 @@
+"use client";
+
+import type { ArchPreviewNode, ArchPreviewEdge } from "@/lib/problems";
+
+const nodeColors: Record<ArchPreviewNode["type"], { bg: string; border: string; text: string; dot: string }> = {
+  client:   { bg: "bg-blue-500/10",    border: "border-blue-500/40",    text: "text-blue-300",    dot: "bg-blue-400" },
+  gateway:  { bg: "bg-purple-500/10",  border: "border-purple-500/40",  text: "text-purple-300",  dot: "bg-purple-400" },
+  service:  { bg: "bg-cyan-500/10",    border: "border-cyan-500/40",    text: "text-cyan-300",    dot: "bg-cyan-400" },
+  cache:    { bg: "bg-yellow-500/10",  border: "border-yellow-500/40",  text: "text-yellow-300",  dot: "bg-yellow-400" },
+  db:       { bg: "bg-amber-500/10",   border: "border-amber-500/40",   text: "text-amber-300",   dot: "bg-amber-400" },
+  queue:    { bg: "bg-orange-500/10",  border: "border-orange-500/40",  text: "text-orange-300",  dot: "bg-orange-400" },
+  worker:   { bg: "bg-teal-500/10",    border: "border-teal-500/40",    text: "text-teal-300",    dot: "bg-teal-400" },
+  external: { bg: "bg-indigo-500/10",  border: "border-indigo-500/40",  text: "text-indigo-300",  dot: "bg-indigo-400" },
+};
+
+interface MiniArchPreviewProps {
+  nodes: ArchPreviewNode[];
+  edges: ArchPreviewEdge[];
+  compact?: boolean;
+}
+
+/**
+ * Lightweight static architecture diagram — no ReactFlow.
+ * Lays out nodes in a horizontal flow, showing connections as SVG arrows.
+ */
+export default function MiniArchPreview({ nodes, edges, compact = false }: MiniArchPreviewProps) {
+  // Compute a left-to-right ordering based on edge traversal (simple BFS)
+  const adjacency: Record<string, string[]> = {};
+  nodes.forEach((n) => { adjacency[n.id] = []; });
+  edges.forEach((e) => { adjacency[e.from]?.push(e.to); });
+
+  // Find roots (no incoming edges)
+  const hasIncoming = new Set(edges.map((e) => e.to));
+  const roots = nodes.filter((n) => !hasIncoming.has(n.id)).map((n) => n.id);
+  if (roots.length === 0 && nodes.length > 0) roots.push(nodes[0].id);
+
+  // BFS to assign column (depth)
+  const col: Record<string, number> = {};
+  const queue = [...roots];
+  roots.forEach((r) => { col[r] = 0; });
+  while (queue.length > 0) {
+    const cur = queue.shift()!;
+    for (const next of adjacency[cur] ?? []) {
+      if (col[next] === undefined) {
+        col[next] = (col[cur] ?? 0) + 1;
+        queue.push(next);
+      }
+    }
+  }
+  nodes.forEach((n) => { if (col[n.id] === undefined) col[n.id] = 0; });
+
+  // Group by column
+  const maxCol = Math.max(...nodes.map((n) => col[n.id]));
+  const cols: ArchPreviewNode[][] = Array.from({ length: maxCol + 1 }, () => []);
+  nodes.forEach((n) => cols[col[n.id]].push(n));
+
+  return (
+    <div
+      className={`w-full overflow-x-auto ${compact ? "py-2" : "py-4"}`}
+      aria-label="Architecture preview diagram"
+    >
+      <div className="flex items-center gap-0 min-w-max mx-auto w-fit">
+        {cols.map((colNodes, ci) => (
+          <div key={ci} className="flex items-center gap-0">
+            {/* Node column — stack vertically if > 1 */}
+            <div className={`flex flex-col gap-2 ${compact ? "" : "gap-3"}`}>
+              {colNodes.map((node) => {
+                const c = nodeColors[node.type] ?? nodeColors.service;
+                return (
+                  <div
+                    key={node.id}
+                    className={`
+                      flex items-center gap-1.5
+                      ${compact ? "px-2.5 py-1.5 text-[10px]" : "px-3 py-2 text-[11px]"}
+                      rounded-xl border ${c.bg} ${c.border} ${c.text}
+                      font-semibold whitespace-nowrap
+                      shadow-sm
+                      transition-all duration-300
+                    `}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.dot} animate-pulse`} />
+                    {node.label}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Arrow connector — drawn between columns */}
+            {ci < cols.length - 1 && (
+              <div className="flex items-center mx-1.5 shrink-0">
+                <svg
+                  width={compact ? "20" : "28"}
+                  height={compact ? "12" : "16"}
+                  viewBox="0 0 28 16"
+                  fill="none"
+                  className="opacity-50"
+                >
+                  <line x1="0" y1="8" x2="20" y2="8" stroke="#6366f1" strokeWidth="1.5" strokeDasharray="3 2" />
+                  <polyline points="16,4 22,8 16,12" stroke="#6366f1" strokeWidth="1.5" fill="none" strokeLinejoin="round" />
+                </svg>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
