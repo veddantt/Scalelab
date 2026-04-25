@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { saveSession, getSession } from "../../../lib/sessionStorage";
@@ -40,7 +42,7 @@ export default function InterviewPage() {
   const router = useRouter();
   const problemId = params.id as string;
   const scenario = getScenario(problemId);
-  const problem = scenario?.title || "System Design Problem";
+  const problem = scenario?.title;
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -59,12 +61,18 @@ export default function InterviewPage() {
 
   const [messages, setMessages] = useState<
     { role: string; content: string; feedback?: string }[]
-  >([
-    {
-      role: "ai",
-      content: `Let's design: **${problem}**.\n\nWhat are the core functional requirements?`,
-    },
-  ]);
+  >([]);
+
+  useEffect(() => {
+    if (problem && messages.length === 0) {
+      setMessages([
+        {
+          role: "ai",
+          content: `Let's design: **${problem}**.\n\nWhat are the core functional requirements?`,
+        },
+      ]);
+    }
+  }, [problem, messages.length]);
 
   const [input, setInput] = useState("");
 
@@ -152,7 +160,7 @@ export default function InterviewPage() {
 
       saveSession({
         id: String(problemId),
-        problem,
+        problem: problem || "",
         messages: finalMessages,
         scores: smoothed,
         currentStep: nextStep,
@@ -177,31 +185,74 @@ export default function InterviewPage() {
   const handleGenerateArchitecture = async () => {
     setGenerating(true);
 
-    // Save current state before navigating
-    saveSession({
-      id: String(problemId),
-      problem,
-      messages,
-      scores,
-      currentStep,
-      highestStep,
-      createdAt: new Date().toISOString(),
-    });
+    try {
+      const archStyle = selectedStyle;
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(`arch-style-${problemId}`, archStyle);
+      }
 
-    // Store the selected style so the architecture page can use it
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem(
-        `arch-style-${problemId}`,
-        selectedStyle
-      );
+      const res = await fetch("/api/architecture", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          problem,
+          messages,
+          architectureStyle: archStyle,
+        }),
+      });
+
+      const data = await res.json();
+      
+      // Save architecture to session
+      const session = getSession(String(problemId)) || {
+        id: String(problemId),
+        problem: problem || "",
+        messages,
+        scores,
+        currentStep,
+        highestStep,
+        createdAt: new Date().toISOString(),
+      };
+
+      session.architecture = {
+        nodes: data.nodes || [],
+        edges: data.edges || [],
+        summary: data.summary,
+        score: data.score,
+        bottlenecks: data.bottlenecks,
+        tradeoffs: data.tradeoffs,
+        scalingRecommendations: data.scalingRecommendations,
+        isFallback: data.isFallback,
+      };
+
+      saveSession(session);
+
+      router.push(`/architecture/${problemId}`);
+    } catch (err) {
+      console.error("Failed to generate architecture:", err);
+      alert("Failed to generate architecture. Please try again.");
+      setGenerating(false);
     }
-
-    router.push(`/architecture/${problemId}`);
   };
 
   const avgScore = Math.round(
     ((scores.clarity + scores.depth + scores.correctness) / 3) * 10
   );
+
+  if (!scenario) {
+    return (
+      <div className="h-screen flex flex-col bg-[#020617] text-white">
+        <Navbar />
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <h1 className="text-3xl font-bold mb-4">Problem Not Found</h1>
+          <p className="text-gray-400 mb-8">The scenario you are looking for does not exist.</p>
+          <a href="/problems" className="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-medium transition">
+            Browse Problems
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col bg-[#020617] text-white overflow-hidden">

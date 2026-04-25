@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
@@ -12,9 +14,10 @@ export default function ReviewPage() {
     const params = useParams();
     const problemId = params.id as string;
     const scenario = getScenario(problemId);
-    const problem = scenario?.title || "System Design Problem";
+    const problem = scenario?.title;
 
     const [review, setReview] = useState<any>(null);
+    const [noReview, setNoReview] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [sharing, setSharing] = useState(false);
@@ -53,43 +56,55 @@ export default function ReviewPage() {
     };
 
     useEffect(() => {
-        const generateReview = async () => {
+        const loadReview = () => {
             try {
                 const session = getSession(problemId);
-                const messages = session ? session.messages : [];
-
-                const res = await fetch("/api/review", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ problem, messages }),
-                });
-
-                const data = await res.json();
-
-                if (!res.ok) {
-                    const msg = typeof data.error === "object"
-                        ? data.error.message
-                        : data.error || "Failed to generate review";
-                    throw new Error(msg);
+                if (!session?.review) {
+                    setNoReview(true);
+                    setLoading(false);
+                    return;
                 }
-
-                setReview(data);
+                setReview(session.review);
             } catch (err: any) {
                 console.error(err);
-                if (err.message.includes("high demand") || err.message.includes("503")) {
-                    setError("Google's AI model is currently experiencing high demand. Please try again in a few moments.");
-                } else {
-                    setError(err.message || "Failed to generate review.");
-                }
+                setError("Failed to load review from session.");
             } finally {
                 setLoading(false);
             }
         };
 
-        generateReview();
-    }, [problemId, problem]);
+        loadReview();
+    }, [problemId]);
+
+    if (!scenario) {
+        return (
+            <div className="min-h-screen flex flex-col bg-black text-white">
+                <Navbar />
+                <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                    <h1 className="text-3xl font-bold mb-4">Problem Not Found</h1>
+                    <p className="text-gray-400 mb-8">The scenario you are looking for does not exist.</p>
+                    <a href="/problems" className="px-6 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl font-medium transition">
+                        Browse Problems
+                    </a>
+                </div>
+            </div>
+        );
+    }
+
+    if (noReview) {
+        return (
+            <div className="min-h-screen flex flex-col bg-black text-white">
+                <Navbar />
+                <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                    <h1 className="text-3xl font-bold mb-4">No review available yet</h1>
+                    <p className="text-gray-400 mb-8">You need to complete the architecture step first.</p>
+                    <a href={`/architecture/${problemId}`} className="px-6 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl font-medium transition">
+                        Generate Architecture First
+                    </a>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen flex flex-col bg-black text-white">

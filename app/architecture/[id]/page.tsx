@@ -1,7 +1,9 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useEffect, useState, useCallback, memo } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { getSession, saveSession } from "../../../lib/sessionStorage";
 import Navbar from "../../components/Navbar";
 import ReactFlow, {
@@ -132,6 +134,7 @@ const FALLBACK_EDGES = [
 
 export default function ArchitecturePage() {
   const params = useParams();
+  const router = useRouter();
   const problemId = params.id as string;
   const scenario = getScenario(problemId);
   const problem = scenario?.title || "System Design Problem";
@@ -139,7 +142,9 @@ export default function ArchitecturePage() {
   const [nodes, setNodes] = useState<any[]>([]);
   const [edges, setEdges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reviewLoading, setReviewLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [noArchitecture, setNoArchitecture] = useState(false);
   const [selectedNode, setSelectedNode] = useState<any | null>(null);
   const [nodeExplanation, setNodeExplanation] = useState<any | null>(null);
   const [explanationLoading, setExplanationLoading] = useState(false);
@@ -174,91 +179,37 @@ export default function ArchitecturePage() {
     }));
   }
 
-  const generateArchitecture = useCallback(async () => {
+  const loadFromSession = useCallback(() => {
     setLoading(true);
     setError(null);
     try {
       const session = getSession(String(problemId));
-      const messages = session ? session.messages : [];
-
-      // Check cache
-      if (session?.architecture?.nodes?.length) {
-        const prepared = prepareNodes(session.architecture.nodes);
-        const styledEdges = prepareEdges(session.architecture.edges);
-        const layouted = getLayoutedElements(prepared, styledEdges);
-        setNodes(layouted.nodes);
-        setEdges(layouted.edges);
-        setSystemInsights({
-          summary: session.architecture.summary,
-          score: session.architecture.score,
-          bottlenecks: session.architecture.bottlenecks,
-          tradeoffs: session.architecture.tradeoffs,
-          scalingRecommendations: session.architecture.scalingRecommendations,
-        });
+      if (!session?.architecture?.nodes?.length) {
+        setNoArchitecture(true);
         setLoading(false);
         return;
       }
 
-      // Get architecture style
-      const archStyle =
-        typeof window !== "undefined"
-          ? sessionStorage.getItem(`arch-style-${problemId}`) || "scalable-production"
-          : "scalable-production";
-
-      const res = await fetch("/api/architecture", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          problem,
-          messages,
-          architectureStyle: archStyle,
-        }),
-      });
-
-      const data = await res.json();
-
-      const prepared = prepareNodes(data.nodes || []);
-      const styledEdges = prepareEdges(data.edges || []);
+      const prepared = prepareNodes(session.architecture.nodes);
+      const styledEdges = prepareEdges(session.architecture.edges);
       const layouted = getLayoutedElements(prepared, styledEdges);
-
-      // Cache in session
-      if (session) {
-        session.architecture = {
-          nodes: data.nodes || [],
-          edges: data.edges || [],
-          summary: data.summary,
-          score: data.score,
-          bottlenecks: data.bottlenecks,
-          tradeoffs: data.tradeoffs,
-          scalingRecommendations: data.scalingRecommendations,
-        };
-        saveSession(session);
-      }
-
       setNodes(layouted.nodes);
       setEdges(layouted.edges);
       setSystemInsights({
-        summary: data.summary,
-        score: data.score,
-        bottlenecks: data.bottlenecks,
-        tradeoffs: data.tradeoffs,
-        scalingRecommendations: data.scalingRecommendations,
+        summary: session.architecture.summary,
+        score: session.architecture.score,
+        bottlenecks: session.architecture.bottlenecks,
+        tradeoffs: session.architecture.tradeoffs,
+        scalingRecommendations: session.architecture.scalingRecommendations,
+        isFallback: session.architecture.isFallback,
       });
     } catch (err) {
       console.error(err);
-
-      // Use fallback
-      const prepared = prepareNodes(FALLBACK_NODES);
-      const styledEdges = prepareEdges(FALLBACK_EDGES);
-      const layouted = getLayoutedElements(prepared, styledEdges);
-
-      setNodes(layouted.nodes);
-      setEdges(layouted.edges);
-      setSystemInsights(FALLBACK_INSIGHTS);
+      setError("Failed to load architecture from session.");
     } finally {
       setLoading(false);
     }
-  }, [problemId, problem]);
+  }, [problemId]);
 
   const handleNodeClick = async (_: any, node: any) => {
     setSelectedNode(node);
@@ -319,8 +270,50 @@ export default function ArchitecturePage() {
   };
 
   useEffect(() => {
-    generateArchitecture();
-  }, [generateArchitecture]);
+    loadFromSession();
+  }, [loadFromSession]);
+
+  const handleGenerateReview = async () => {
+    setReviewLoading(true);
+    try {
+      const session = getSession(String(problemId));
+      if (!session) throw new Error("No session found");
+      const messages = session.messages || [];
+
+      const res = await fetch("/api/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ problem, messages }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to generate review");
+
+      session.review = data;
+      saveSession(session);
+
+      router.push(`/review/${problemId}`);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to generate review. Please try again.");
+      setReviewLoading(false);
+    }
+  };
+
+  if (noArchitecture) {
+    return (
+      <div className="h-screen flex flex-col bg-[#020617] text-white">
+        <Navbar />
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <h1 className="text-3xl font-bold mb-4">No architecture generated yet</h1>
+          <p className="text-gray-400 mb-8">You need to complete the interview or click generate first.</p>
+          <a href={`/interview/${problemId}`} className="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-medium transition">
+            Go to Interview
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col bg-[#020617] text-white overflow-hidden">
@@ -348,12 +341,13 @@ export default function ArchitecturePage() {
               </span>
             </div>
           )}
-          <a
-            href={`/review/${problemId}`}
-            className="px-5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium text-sm transition-all shadow-lg hover:shadow-purple-500/25"
+          <button
+            onClick={handleGenerateReview}
+            disabled={reviewLoading}
+            className={`px-5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium text-sm transition-all shadow-lg hover:shadow-purple-500/25 ${reviewLoading ? "opacity-70 cursor-not-allowed" : ""}`}
           >
-            Finish & Get Review →
-          </a>
+            {reviewLoading ? "Generating Review..." : "Finish & Get Review →"}
+          </button>
         </div>
       </div>
 
@@ -376,7 +370,7 @@ export default function ArchitecturePage() {
                 <p className="text-sm text-gray-400">{error}</p>
               </div>
               <button
-                onClick={generateArchitecture}
+                onClick={loadFromSession}
                 className="px-6 py-2 bg-white text-black font-medium rounded-xl hover:bg-gray-200 transition"
               >
                 Retry

@@ -34,6 +34,7 @@ const MOCK_FALLBACK = {
     "Partition the Kafka topic by entity ID for parallel consumer processing.",
     "Deploy the Application Service behind a load balancer with auto-scaling.",
   ],
+  isFallback: true,
 };
 
 export async function POST(req: Request) {
