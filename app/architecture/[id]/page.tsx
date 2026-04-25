@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, memo } from "react";
 import { useParams } from "next/navigation";
 import { getSession, saveSession } from "../../../lib/sessionStorage";
+import Navbar from "../../components/Navbar";
 import ReactFlow, {
   Background,
   Controls,
@@ -322,13 +323,19 @@ export default function ArchitecturePage() {
   }, [generateArchitecture]);
 
   return (
-    <main className="h-screen bg-[#020617] text-white flex flex-col">
-      {/* ─── Header ─── */}
+    <div className="h-screen flex flex-col bg-[#020617] text-white overflow-hidden">
+      <Navbar />
+
+      {/* ─── Sub-header ─── */}
       <div className="px-6 py-4 border-b border-gray-800/50 bg-black/40 backdrop-blur-md flex items-center justify-between shadow-sm z-10">
         <div className="flex flex-col">
-          <span className="text-purple-400 text-xs font-bold tracking-widest uppercase mb-1">
-            Architecture Workspace
-          </span>
+          <div className="flex items-center gap-2 text-[11px] text-gray-500 mb-1.5 font-medium tracking-wide">
+            <a href="/problems" className="hover:text-white transition">Problems</a>
+            <span>/</span>
+            <a href={`/interview/${problemId}`} className="hover:text-white transition">{problem}</a>
+            <span>/</span>
+            <span className="text-purple-400">Architecture</span>
+          </div>
           <h1 className="text-xl font-semibold text-white">{problem}</h1>
         </div>
 
@@ -342,12 +349,6 @@ export default function ArchitecturePage() {
             </div>
           )}
           <a
-            href={`/interview/${problemId}`}
-            className="text-sm text-gray-400 hover:text-white transition-colors"
-          >
-            ← Interview
-          </a>
-          <a
             href={`/review/${problemId}`}
             className="px-5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-medium text-sm transition-all shadow-lg hover:shadow-purple-500/25"
           >
@@ -357,7 +358,7 @@ export default function ArchitecturePage() {
       </div>
 
       {/* ─── Main ─── */}
-      <div className="flex-1 flex min-h-0">
+      <div className="flex-1 flex min-h-0 overflow-hidden">
         {/* Canvas */}
         <div className="flex-1">
           {loading ? (
@@ -551,6 +552,6 @@ export default function ArchitecturePage() {
           )}
         </aside>
       </div>
-    </main>
+    </div>
   );
 }

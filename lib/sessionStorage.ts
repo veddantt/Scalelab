@@ -20,6 +20,7 @@ export type ScaleLabSession = {
     scalingRecommendations?: string[];
   };
   explanations?: Record<string, any>;
+  review?: any;
 };
 
 export function saveSession(session: ScaleLabSession) {

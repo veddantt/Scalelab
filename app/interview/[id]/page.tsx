@@ -4,7 +4,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { saveSession, getSession } from "../../../lib/sessionStorage";
 import { getScenario } from "../../../lib/scenarios";
-import { Loader2, Send, ArrowRight, Lock, CheckCircle2, Circle, Cpu, BarChart2, Lightbulb, Zap } from "lucide-react";
+import Navbar from "../../components/Navbar";
+import { Loader2, Send, Lock, CheckCircle2, Lightbulb, Zap } from "lucide-react";
 
 const steps = [
   { title: "Requirements", subtitle: "Core features & scope" },
@@ -56,7 +57,9 @@ export default function InterviewPage() {
     correctness: 0,
   });
 
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState<
+    { role: string; content: string; feedback?: string }[]
+  >([
     {
       role: "ai",
       content: `Let's design: **${problem}**.\n\nWhat are the core functional requirements?`,
@@ -85,7 +88,8 @@ export default function InterviewPage() {
     if (!input.trim() || sending) return;
     setSending(true);
 
-    const newMessages = [...messages, { role: "user", content: input }];
+    const userMsg = { role: "user", content: input };
+    const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput("");
 
@@ -103,20 +107,46 @@ export default function InterviewPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong");
 
-      const finalMessages = [
-        ...newMessages,
-        { role: "ai", content: data.reply },
-      ];
+      // Weighted score smoothing: 70% old + 30% new
+      const smoothed = {
+        clarity: scores.clarity === 0
+          ? data.scores.clarity
+          : Math.round(scores.clarity * 0.7 + data.scores.clarity * 0.3),
+        depth: scores.depth === 0
+          ? data.scores.depth
+          : Math.round(scores.depth * 0.7 + data.scores.depth * 0.3),
+        correctness: scores.correctness === 0
+          ? data.scores.correctness
+          : Math.round(scores.correctness * 0.7 + data.scores.correctness * 0.3),
+      };
+
+      const aiMsg = {
+        role: "ai",
+        content: data.reply,
+        feedback: data.feedback ?? undefined,
+      };
+      const finalMessages = [...newMessages, aiMsg];
 
       setMessages(finalMessages);
-      setScores(data.scores);
+      setScores(smoothed);
 
-      const nextStep = data.shouldAdvance ? data.nextStep : currentStep;
       let newHighestStep = highestStep;
-      
-      if (data.shouldAdvance) {
-        setCurrentStep(data.nextStep);
-        newHighestStep = Math.max(highestStep, data.nextStep);
+      let nextStep = currentStep;
+
+      if (data.shouldAdvance && currentStep < steps.length - 1) {
+        nextStep = currentStep + 1;
+        newHighestStep = Math.max(highestStep, nextStep);
+
+        // Toast then advance after short delay
+        const nextTitle = steps[nextStep]?.title ?? "Next Step";
+        setToastMessage(`\u2713 Moving to: ${nextTitle}`);
+        setTimeout(() => {
+          setCurrentStep(nextStep);
+          setHighestStep(newHighestStep);
+          setToastMessage(null);
+        }, 450);
+      } else {
+        setCurrentStep(nextStep);
         setHighestStep(newHighestStep);
       }
 
@@ -124,7 +154,7 @@ export default function InterviewPage() {
         id: String(problemId),
         problem,
         messages: finalMessages,
-        scores: data.scores,
+        scores: smoothed,
         currentStep: nextStep,
         highestStep: newHighestStep,
         createdAt: new Date().toISOString(),
@@ -174,125 +204,164 @@ export default function InterviewPage() {
   );
 
   return (
-    <main className="h-screen bg-[#020617] text-white flex">
-      {/* ─── LEFT: Chat ─── */}
-      <div className="flex-1 border-r border-gray-800/50 flex flex-col min-w-0">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-800/50 bg-black/40 backdrop-blur-md flex items-center justify-between">
-          <div>
-            <a
-              href="/problems"
-              className="text-xs text-gray-500 hover:text-gray-300 transition"
-            >
-              ← Problems
-            </a>
-            <h1 className="text-lg font-semibold mt-1">{problem}</h1>
+    <div className="h-screen flex flex-col bg-[#020617] text-white overflow-hidden">
+      <Navbar />
+
+      {/* ─── Content ─── */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* ─── LEFT: Chat ─── */}
+        <div className="flex-1 border-r border-gray-800/50 flex flex-col min-w-0">
+          {/* Header */}
+          <div className="px-6 py-4 border-b border-gray-800/50 bg-black/40 backdrop-blur-md flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-[11px] text-gray-500 mb-1.5 font-medium tracking-wide">
+                <a href="/problems" className="hover:text-white transition">Problems</a>
+                <span>/</span>
+                <a href={`/interview/${problemId}`} className="hover:text-white transition">{problem}</a>
+                <span>/</span>
+                <span className="text-purple-400">Interview</span>
+              </div>
+              <h1 className="text-lg font-semibold">{problem}</h1>
+              {scenario && (
+                <p className="text-xs text-gray-400 mt-1">{scenario.description}</p>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500 font-medium">
+                Step {currentStep + 1}/{steps.length}
+              </span>
+              <span className="text-xs font-semibold text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">
+                {steps[currentStep].title}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500 font-medium">
+
+          {/* Problem Statement */}
+          {scenario && (
+            <div className="px-6 py-3 border-b border-gray-800/30 bg-gray-900/20">
+              <div className="flex gap-2 flex-wrap">
+                {scenario.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-xs px-2 py-0.5 rounded bg-gray-800/50 text-gray-500 border border-gray-700/50"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            {messages.map((msg, i) => (
+              <div
+                key={i}
+                className={`max-w-2xl ${msg.role === "ai" ? "" : "ml-auto"}`}
+              >
+                <div className="text-xs mb-1.5 text-gray-500 font-medium">
+                  {msg.role === "ai" ? "ScaleLab AI" : "You"}
+                </div>
+                <div
+                  className={`p-4 rounded-2xl text-sm leading-relaxed ${
+                    msg.role === "ai"
+                      ? "bg-gray-900/60 border border-gray-800/50 text-gray-200"
+                      : "bg-purple-600/20 border border-purple-500/20 text-white"
+                  }`}
+                >
+                  {msg.content}
+                </div>
+                {/* Inline feedback under AI messages */}
+                {msg.role === "ai" && msg.feedback && (
+                  <p className="mt-1.5 px-1 text-[11px] text-gray-600 italic leading-relaxed">
+                    {msg.feedback}
+                  </p>
+                )}
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input */}
+          <div className="p-4 border-t border-gray-800/50 bg-black/30">
+            <div className="flex gap-3">
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                className="flex-1 p-3.5 rounded-2xl bg-gray-900/80 border border-gray-700/50 text-sm placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition"
+                placeholder="Type your answer..."
+                disabled={sending}
+              />
+              <button
+                onClick={sendMessage}
+                disabled={sending || !input.trim()}
+                className="px-5 bg-white text-black rounded-2xl font-medium text-sm hover:bg-gray-100 transition disabled:opacity-40 flex items-center gap-2"
+              >
+                {sending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ─── RIGHT: Sidebar ─── */}
+        <aside className="w-[340px] flex flex-col bg-[#020617] border-l border-gray-800/50 overflow-hidden">
+
+        {/* ─── Sidebar Header ─── */}
+        <div className="px-4 pt-4 pb-3 border-b border-gray-800/50 shrink-0 space-y-3">
+
+          {/* Title */}
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">
+            System Design Interview
+          </p>
+
+          {/* Live badge + step counter */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-400/80">
+                Live Interview
+              </span>
+            </div>
+            <span className="text-[11px] font-semibold text-gray-500">
               Step {currentStep + 1}/{steps.length}
             </span>
-            <span className="text-xs font-semibold text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">
-              {steps[currentStep].title}
-            </span>
           </div>
-        </div>
 
-        {/* Problem Statement */}
-        {scenario && (
-          <div className="px-6 py-3 border-b border-gray-800/30 bg-gray-900/20">
-            <p className="text-sm text-gray-400">{scenario.description}</p>
-            <div className="flex gap-2 mt-2">
-              {scenario.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="text-xs px-2 py-0.5 rounded bg-gray-800/50 text-gray-500 border border-gray-700/50"
-                >
-                  {tag}
-                </span>
-              ))}
+          {/* Progress bar with percentage */}
+          <div>
+            <div className="flex justify-between items-center mb-1.5">
+              <span className="text-[10px] text-gray-600 font-medium">Progress</span>
+              <span className="text-[10px] font-bold text-purple-400">
+                {Math.round(((currentStep + 1) / steps.length) * 100)}%
+              </span>
             </div>
-          </div>
-        )}
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {messages.map((msg, i) => (
-            <div
-              key={i}
-              className={`max-w-2xl ${
-                msg.role === "ai" ? "" : "ml-auto"
-              }`}
-            >
-              <div className="text-xs mb-1.5 text-gray-500 font-medium">
-                {msg.role === "ai" ? "ScaleLab AI" : "You"}
-              </div>
+            <div className="h-1.5 bg-gray-800/80 rounded-full overflow-hidden">
               <div
-                className={`p-4 rounded-2xl text-sm leading-relaxed ${
-                  msg.role === "ai"
-                    ? "bg-gray-900/60 border border-gray-800/50 text-gray-200"
-                    : "bg-purple-600/20 border border-purple-500/20 text-white"
-                }`}
-              >
-                {msg.content}
-              </div>
+                className="h-full bg-gradient-to-r from-purple-600 to-blue-500 rounded-full transition-all duration-700"
+                style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+              />
             </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input */}
-        <div className="p-4 border-t border-gray-800/50 bg-black/30">
-          <div className="flex gap-3">
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              className="flex-1 p-3.5 rounded-2xl bg-gray-900/80 border border-gray-700/50 text-sm placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition"
-              placeholder="Type your answer..."
-              disabled={sending}
-            />
-            <button
-              onClick={sendMessage}
-              disabled={sending || !input.trim()}
-              className="px-5 bg-white text-black rounded-2xl font-medium text-sm hover:bg-gray-100 transition disabled:opacity-40 flex items-center gap-2"
-            >
-              {sending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
-              Send
-            </button>
           </div>
-        </div>
-      </div>
 
-      {/* ─── RIGHT: Sidebar ─── */}
-      <aside className="w-[340px] flex flex-col bg-[#020617] border-l border-gray-800/50 overflow-hidden">
-
-        {/* Header */}
-        <div className="px-4 pt-4 pb-3 border-b border-gray-800/50 shrink-0">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Live Interview</span>
-            </div>
-            <span className="text-[10px] font-semibold text-gray-500">Step {currentStep + 1} of {steps.length}</span>
-          </div>
-          <div className="h-0.5 bg-gray-800 rounded-full overflow-hidden mb-3">
-            <div className="h-full bg-gradient-to-r from-purple-600 to-blue-500 rounded-full transition-all duration-700"
-              style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }} />
-          </div>
+          {/* Tabs */}
           <div className="flex gap-1 p-1 rounded-xl bg-gray-900/60 border border-gray-800/50">
             {(["steps", "score", "arch"] as const).map((id) => (
-              <button key={id} onClick={() => setSidebarTab(id)}
+              <button
+                key={id}
+                onClick={() => setSidebarTab(id)}
                 className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-all capitalize ${
                   sidebarTab === id
                     ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow"
                     : "text-gray-500 hover:text-gray-300"
-                }`}>
-                {id === "arch" ? "Arch" : id.charAt(0).toUpperCase() + id.slice(1)}
+                }`}
+              >
+                {id === "arch" ? "Architecture" : id.charAt(0).toUpperCase() + id.slice(1)}
               </button>
             ))}
           </div>
@@ -304,46 +373,88 @@ export default function InterviewPage() {
           {/* ── STEPS TAB ── */}
           {sidebarTab === "steps" && (
             <div className="space-y-4">
-              <div className="relative border-l border-gray-800 ml-3 space-y-3">
+              <div className="space-y-1.5">
                 {steps.map((s, i) => {
                   const isLocked = i > highestStep;
-                  const isCompleted = i < highestStep;
+                  const isCompleted = i < currentStep;
                   const isCurrent = i === currentStep;
+
                   return (
-                    <div key={i}
+                    <div
+                      key={i}
                       onClick={() => {
                         if (isLocked) {
                           setToastMessage("Complete the current step first.");
                           setTimeout(() => setToastMessage(null), 3000);
-                        } else { setCurrentStep(i); }
+                        } else {
+                          setCurrentStep(i);
+                        }
                       }}
-                      className={`relative pl-5 transition group ${isLocked ? "cursor-not-allowed opacity-45" : "cursor-pointer"}`}>
-                      {(isCurrent || isCompleted) && (
-                        <div className={`absolute left-[-1px] top-0 bottom-[-12px] w-[2px] ${isCurrent ? "bg-purple-500" : "bg-purple-500/40"}`} />
-                      )}
-                      <div className={`absolute left-[-10px] top-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ring-4 ring-[#020617] transition-all ${
-                        isCurrent ? "bg-purple-500 text-white shadow-[0_0_8px_rgba(168,85,247,0.6)]"
-                          : isCompleted ? "bg-gray-800 border border-gray-600 text-gray-400 group-hover:bg-gray-700"
-                          : "bg-[#020617] border border-gray-700 text-gray-600"
-                      }`}>
-                        {isCompleted && !isCurrent ? "✓" : i + 1}
+                      className={`group flex items-start gap-3 p-3 rounded-xl border transition-all duration-200 ${
+                        isCurrent
+                          ? "bg-purple-500/10 border-purple-500/30 shadow-[0_0_16px_rgba(168,85,247,0.1)]"
+                          : isCompleted
+                          ? "bg-gray-900/30 border-gray-800/40 cursor-pointer hover:bg-gray-800/40 hover:border-gray-700"
+                          : isLocked
+                          ? "bg-transparent border-transparent cursor-not-allowed opacity-40"
+                          : "bg-gray-900/20 border-gray-800/30 cursor-pointer hover:bg-gray-800/30"
+                      }`}
+                    >
+                      {/* Circle */}
+                      <div
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 transition-all ${
+                          isCurrent
+                            ? "bg-purple-500 text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]"
+                            : isCompleted
+                            ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-400"
+                            : "bg-gray-800/80 border border-gray-700/60 text-gray-600"
+                        }`}
+                      >
+                        {isCompleted ? "✓" : i + 1}
                       </div>
-                      <div className={`p-2.5 rounded-xl border transition-all duration-200 ${
-                        isCurrent ? "bg-purple-500/10 border-purple-500/30 shadow-[0_0_12px_rgba(168,85,247,0.12)]"
-                          : isCompleted ? "bg-gray-900/30 border-gray-800/40 group-hover:bg-gray-800/50 group-hover:border-gray-700"
-                          : "bg-transparent border-transparent"
-                      }`}>
-                        <div className="flex items-center justify-between mb-0.5">
-                          <span className={`text-[13px] font-semibold ${isCurrent ? "text-purple-300" : isCompleted ? "text-gray-300" : "text-gray-600"}`}>
-                            {s.title}
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2 mb-0.5">
+                          <span
+                            className={`text-[12px] font-semibold leading-tight ${
+                              isCurrent
+                                ? "text-purple-200"
+                                : isCompleted
+                                ? "text-gray-300"
+                                : "text-gray-600"
+                            }`}
+                          >
+                            {String(i + 1).padStart(2, "0")} {s.title}
                           </span>
-                          {isCurrent && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 border border-purple-500/30">Current</span>}
-                          {isCompleted && !isCurrent && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500/60 border border-emerald-500/20">Done</span>}
-                          {isLocked && <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-gray-800/60 text-gray-600 border border-gray-700/30"><Lock className="w-2 h-2" />Locked</span>}
+                          {isCurrent && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 border border-purple-500/30 whitespace-nowrap shrink-0">
+                              Current
+                            </span>
+                          )}
+                          {isCompleted && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500/70 border border-emerald-500/20 whitespace-nowrap shrink-0">
+                              Done
+                            </span>
+                          )}
+                          {isLocked && (
+                            <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-gray-800/60 text-gray-600 border border-gray-700/30 whitespace-nowrap shrink-0">
+                              <Lock className="w-2 h-2" />
+                              Locked
+                            </span>
+                          )}
                         </div>
-                        <p className={`text-[11px] ${isCurrent ? "text-purple-400/60" : "text-gray-600"}`}>{s.subtitle}</p>
+                        <p
+                          className={`text-[11px] leading-relaxed ${
+                            isCurrent ? "text-purple-400/60" : "text-gray-600"
+                          }`}
+                        >
+                          {s.subtitle}
+                        </p>
                         {isCurrent && i < steps.length - 1 && (
-                          <p className="text-[10px] text-purple-400/40 mt-1 italic">Answer to unlock {steps[i + 1].title} →</p>
+                          <p className="text-[10px] text-purple-400/40 mt-1.5 italic">
+                            Answer this step to unlock {steps[i + 1].title} →
+                          </p>
                         )}
                       </div>
                     </div>
@@ -351,10 +462,13 @@ export default function InterviewPage() {
                 })}
               </div>
 
+              {/* AI Coach Tip */}
               <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-500/5">
-                <div className="flex items-center gap-1.5 mb-1">
+                <div className="flex items-center gap-1.5 mb-1.5">
                   <Lightbulb className="w-3 h-3 text-amber-400 shrink-0" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400/80">AI Coach Tip</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400/80">
+                    AI Coach Tip
+                  </span>
                 </div>
                 <p className="text-[11px] text-gray-400 leading-relaxed">
                   {currentStep === 0 && "Start with users, core actions, and non-functional needs before discussing scale."}
@@ -367,9 +481,12 @@ export default function InterviewPage() {
                 </p>
               </div>
 
+              {/* Dev shortcut */}
               {process.env.NODE_ENV === "development" && (
-                <button onClick={() => { setHighestStep(6); setCurrentStep(6); }}
-                  className="w-full py-1.5 rounded-lg border border-gray-700/40 text-[11px] text-gray-500 hover:text-gray-300 hover:border-gray-600 transition font-medium">
+                <button
+                  onClick={() => { setHighestStep(6); setCurrentStep(6); }}
+                  className="w-full py-1.5 rounded-lg border border-gray-700/40 text-[11px] text-gray-500 hover:text-gray-300 hover:border-gray-600 transition font-medium"
+                >
                   Unlock demo flow
                 </button>
               )}
@@ -401,7 +518,9 @@ export default function InterviewPage() {
                 </div>
               </div>
               {avgScore === 0 && (
-                <p className="text-center text-[11px] text-gray-600 pb-1">Not enough data yet — answer a few questions to see your score.</p>
+                <p className="text-center text-[11px] text-gray-600 pb-1">
+                  Not enough data yet — answer a few questions to see your score.
+                </p>
               )}
               <div className="space-y-2.5">
                 {[
@@ -468,13 +587,19 @@ export default function InterviewPage() {
             </div>
           )}
         </div>
-      </aside>
+        </aside>
+      </div>
 
+      {/* Toast */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 bg-gray-900 border border-red-500/30 text-red-400 px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl z-50">
+        <div className={`fixed bottom-6 right-6 px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl z-50 transition-all ${
+          toastMessage.startsWith("\u2713")
+            ? "bg-emerald-950 border border-emerald-500/30 text-emerald-400"
+            : "bg-gray-900 border border-red-500/30 text-red-400"
+        }`}>
           {toastMessage}
         </div>
       )}
-    </main>
+    </div>
   );
 }

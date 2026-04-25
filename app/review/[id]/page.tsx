@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { getScenario } from "../../../lib/scenarios";
 import { getSession } from "../../../lib/sessionStorage";
 import { supabase } from "../../../lib/supabase";
+import Navbar from "../../components/Navbar";
 
 export default function ReviewPage() {
     const params = useParams();
@@ -91,11 +92,19 @@ export default function ReviewPage() {
     }, [problemId, problem]);
 
     return (
-        <main className="min-h-screen bg-black text-white p-6 md:p-12">
+        <div className="min-h-screen flex flex-col bg-black text-white">
+            <Navbar />
+            <main className="flex-1 p-6 md:p-12">
             <div className="max-w-6xl mx-auto">
                 <div className="flex items-center justify-between mb-12 border-b border-gray-800 pb-6">
                     <div>
-                        <p className="text-green-500 font-semibold tracking-[0.2em] uppercase text-xs mb-2">Final Evaluation</p>
+                        <div className="flex items-center gap-2 text-[11px] text-gray-500 mb-2 font-medium tracking-wide">
+                            <a href="/problems" className="hover:text-white transition">Problems</a>
+                            <span>/</span>
+                            <a href={`/interview/${problemId}`} className="hover:text-white transition">{problem}</a>
+                            <span>/</span>
+                            <span className="text-green-500">Review</span>
+                        </div>
                         <h1 className="text-3xl font-bold">{problem}</h1>
                     </div>
                     <div className="flex gap-4">
@@ -245,5 +254,6 @@ export default function ReviewPage() {
                 ) : null}
             </div>
         </main>
+        </div>
     );
 }

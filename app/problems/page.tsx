@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { scenarios } from "../../lib/scenarios";
+import Navbar from "../components/Navbar";
 import {
   Clock,
   ArrowRight,
@@ -38,13 +39,7 @@ const difficultyBadge: Record<string, string> = {
   Advanced: "bg-red-500/10 text-red-400 border-red-500/20",
 };
 
-const NAV_LINKS = [
-  { label: "Home", href: "/" },
-  { label: "Problems", href: "/problems" },
-  { label: "Interview", href: "#" },
-  { label: "Architecture", href: "#" },
-  { label: "Review", href: "#" },
-];
+
 
 type DifficultyFilter = "All" | "Beginner" | "Intermediate" | "Advanced";
 type SortBy = "default" | "time-asc" | "time-desc" | "difficulty";
@@ -74,30 +69,7 @@ export default function ProblemsPage() {
       {/* Background glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-72 bg-purple-500/8 blur-[120px] rounded-full pointer-events-none" />
 
-      {/* ─── Navbar ─── */}
-      <nav className="sticky top-0 z-50 border-b border-gray-800/50 bg-[#020617]/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 md:px-10 h-14 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-purple-400" />
-            <span className="text-sm font-bold tracking-wide">ScaleLab</span>
-          </a>
-          <div className="flex items-center gap-6">
-            {NAV_LINKS.map(({ label, href }) => (
-              <a
-                key={label}
-                href={href}
-                className={`text-[13px] font-medium transition ${
-                  label === "Problems"
-                    ? "text-white"
-                    : "text-gray-500 hover:text-gray-300"
-                }`}
-              >
-                {label}
-              </a>
-            ))}
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       <div className="max-w-7xl mx-auto px-6 md:px-10 pt-16 pb-24 relative z-10">
         {/* ─── Page Header ─── */}

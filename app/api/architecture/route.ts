@@ -51,25 +51,12 @@ export async function POST(req: Request) {
 
     const candidateAnswers =
       messages && messages.length > 0
-        ? messages.map((m: any) => `${m.role}: ${m.content}`).join("\n")
+        ? messages.map((m: { role: string; content: string }) => `${m.role}: ${m.content}`).join("\n")
         : "No answers yet — generate a standard architecture.";
 
     const userPrompt = `Generate a system design architecture for: ${problem}\n\n${styleInstruction}\nCandidate answers:\n${candidateAnswers}`;
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:3000",
-        "X-Title": "ScaleLab",
-      },
-      body: JSON.stringify({
-        model: "deepseek/deepseek-chat",
-        messages: [
-          {
-            role: "system",
-            content: `You are a senior system design engineer.
+    const systemContent = `You are a senior system design engineer.
 
 Return ONLY valid JSON in this exact format:
 {
@@ -106,44 +93,81 @@ Rules:
 - Tradeoffs must explain why one choice was made over another.
 - Scaling recommendations must be actionable.
 - Return 3-5 items for bottlenecks, tradeoffs, and scalingRecommendations each.
-- Return ONLY JSON. No markdown. No explanation outside the JSON.`,
-          },
-          {
-            role: "user",
-            content: userPrompt,
-          },
-        ],
-      }),
-    });
+- Return ONLY JSON. No markdown. No explanation outside the JSON.`;
 
+    async function fetchArchitecture(): Promise<Response> {
+      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "http://localhost:3000",
+          "X-Title": "ScaleLab",
+        },
+        body: JSON.stringify({
+          model: "deepseek/deepseek-chat",
+          messages: [
+            { role: "system", content: systemContent },
+            { role: "user", content: userPrompt },
+          ],
+        }),
+      });
+      return res;
+    }
+
+    function tryParse(raw: string) {
+      try {
+        const cleaned = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+        return JSON.parse(cleaned);
+      } catch {
+        return null;
+      }
+    }
+
+    // First attempt
+    const response = await fetchArchitecture();
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    const content: string | undefined = data.choices?.[0]?.message?.content;
 
     if (!content) {
       console.error("No content in OpenRouter response:", data);
       return Response.json(MOCK_FALLBACK);
     }
 
-    let parsed;
-    try {
-      const cleaned = content
-        .replace(/```json/g, "")
-        .replace(/```/g, "")
-        .trim();
-      parsed = JSON.parse(cleaned);
-    } catch {
-      console.error("JSON parse failed, using fallback. Raw:", content.slice(0, 200));
+    let parsed = tryParse(content);
+
+    // Retry once on bad JSON
+    if (!parsed) {
+      console.warn("Architecture JSON parse failed, retrying...");
+      const retryRes = await fetchArchitecture();
+      const retryData = await retryRes.json();
+      const retryContent: string | undefined = retryData.choices?.[0]?.message?.content;
+      if (retryContent) parsed = tryParse(retryContent);
+    }
+
+    if (!parsed) {
+      console.error("Architecture JSON parse failed after retry, using fallback.");
       return Response.json(MOCK_FALLBACK);
     }
 
     // Validate required fields
-    if (!parsed.nodes || !parsed.edges || !Array.isArray(parsed.nodes)) {
+    if (
+      !Array.isArray(parsed.nodes) ||
+      !Array.isArray(parsed.edges) ||
+      parsed.nodes.length === 0
+    ) {
       console.error("Invalid architecture shape, using fallback");
       return Response.json(MOCK_FALLBACK);
     }
 
+    // Sanitize nodes and edges
+    const validNodeIds = new Set(parsed.nodes.map((n: { id: string }) => String(n.id)));
+    parsed.edges = (parsed.edges as { source: string; target: string; label?: string }[]).filter(
+      (e) => validNodeIds.has(String(e.source)) && validNodeIds.has(String(e.target))
+    );
+
     return Response.json(parsed);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Architecture API error:", error);
     return Response.json(MOCK_FALLBACK);
   }
