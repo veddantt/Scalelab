@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { problemMeta } from "@/lib/problems";
 import type { ProblemMeta } from "@/lib/problems";
+import { getSession, saveSession } from "@/lib/sessionStorage";
 import Navbar from "@/components/Navbar";
 import MiniArchPreview from "@/components/MiniArchPreview";
 import {
@@ -21,6 +22,12 @@ import {
   CheckCircle2,
   Sparkles,
   Layers,
+  Play,
+  Star,
+  Database,
+  GitBranch,
+  Scale,
+  Workflow,
 } from "lucide-react";
 
 // ─── Static maps ──────────────────────────────────────────────────────────────
@@ -58,7 +65,7 @@ type DifficultyFilter = "All" | "Beginner" | "Intermediate" | "Advanced";
 const FEATURED_ID = "real-time-chat";
 
 // ─── Problem Detail Panel ─────────────────────────────────────────────────────
-function ProblemDetailPanel({ meta, onStart }: { meta: ProblemMeta; onStart: () => void }) {
+function ProblemDetailPanel({ meta, onStart, onTryDemo }: { meta: ProblemMeta; onStart: () => void; onTryDemo: () => void }) {
   const { problem, requirements, practiceSkills, archPreview } = meta;
   const Icon = iconMap[problem.id] ?? Link2;
 
@@ -101,14 +108,26 @@ function ProblemDetailPanel({ meta, onStart }: { meta: ProblemMeta; onStart: () 
 
       {/* What you'll practice */}
       <div className="px-6 py-4 border-b border-gray-800/50">
-        <p className="text-[10px] uppercase tracking-widest text-gray-600 font-bold mb-3">What You'll Practice</p>
-        <div className="flex flex-wrap gap-1.5">
-          {practiceSkills.map((s) => (
-            <span key={s} className="text-[11px] px-2.5 py-1 rounded-lg bg-purple-500/8 border border-purple-500/20 text-purple-300 font-medium">
-              {s}
-            </span>
-          ))}
+        <p className="text-[10px] uppercase tracking-widest text-gray-600 font-bold mb-3">What You&apos;ll Practice</p>
+        <div className="grid grid-cols-2 gap-2">
+          {practiceSkills.slice(0, 4).map((s, i) => {
+            const skillIcons = [Database, GitBranch, Scale, Workflow];
+            const SIcon = skillIcons[i % skillIcons.length];
+            return (
+              <div key={s} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-purple-500/5 border border-purple-500/15 group/skill hover:bg-purple-500/10 transition-all">
+                <SIcon className="w-3.5 h-3.5 text-purple-500/60 group-hover/skill:text-purple-400 transition-colors shrink-0" />
+                <span className="text-[11px] text-purple-300/80 font-medium truncate">{s}</span>
+              </div>
+            );
+          })}
         </div>
+        {practiceSkills.length > 4 && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {practiceSkills.slice(4).map((s) => (
+              <span key={s} className="text-[10px] px-2 py-0.5 rounded-md bg-gray-800/40 text-gray-500 border border-gray-700/30">{s}</span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Tags + examples */}
@@ -131,13 +150,22 @@ function ProblemDetailPanel({ meta, onStart }: { meta: ProblemMeta; onStart: () 
           <Clock className="w-3.5 h-3.5" />
           ~{problem.estimatedMinutes} min interview
         </div>
-        <button
-          onClick={onStart}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold text-[13px] transition-all shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 group"
-        >
-          Start Interview
-          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={onStart}
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold text-[13px] transition-all shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98] group"
+          >
+            Start Interview
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </button>
+          <button
+            onClick={onTryDemo}
+            className="flex items-center gap-1.5 px-4 py-3 rounded-xl border border-gray-700/50 bg-gray-900/40 text-gray-400 hover:text-white hover:border-purple-500/30 hover:bg-purple-500/5 text-[12px] font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <Play className="w-3.5 h-3.5" />
+            Demo
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -149,6 +177,7 @@ export default function ProblemsPage() {
   const [filter, setFilter] = useState<DifficultyFilter>("All");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState(problemMeta[0].problem.id);
+  const [isPracticeMode, setIsPracticeMode] = useState(true);
 
   // Featured entry
   const featured = problemMeta.find((m) => m.problem.id === FEATURED_ID) ?? problemMeta[0];
@@ -165,29 +194,69 @@ export default function ProblemsPage() {
 
   const selectedMeta = problemMeta.find((m) => m.problem.id === selectedId) ?? problemMeta[0];
 
+  const handleTryDemo = (id: string) => {
+    const existing = getSession(id);
+    if (!existing?.architecture?.nodes?.length) {
+      fetch("/api/architecture", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ problem: problemMeta.find(m => m.problem.id === id)?.problem.title || id, messages: [], architectureStyle: "high-level" }),
+      }).then(r => r.json()).then(data => {
+        const session = existing || { id, problem: problemMeta.find(m => m.problem.id === id)?.problem.title || id, messages: [], scores: { clarity: 0, depth: 0, correctness: 0 }, currentStep: 0, createdAt: new Date().toISOString() };
+        session.architecture = { nodes: data.nodes, edges: data.edges, summary: data.summary, score: data.score, bottlenecks: data.bottlenecks, tradeoffs: data.tradeoffs, scalingRecommendations: data.scalingRecommendations, isFallback: data.isFallback };
+        saveSession(session);
+        router.push(`/architecture/${id}`);
+      }).catch(() => router.push(`/interview/${id}`));
+    } else {
+      router.push(`/architecture/${id}`);
+    }
+  };
+
+  const handleStartInterview = (id: string) => {
+    let session = getSession(id);
+    if (!session) {
+      session = {
+        id,
+        problem: problemMeta.find((m) => m.problem.id === id)?.problem.title || id,
+        messages: [],
+        scores: { clarity: 0, depth: 0, correctness: 0 },
+        currentStep: 0,
+        createdAt: new Date().toISOString(),
+        attemptNumber: 1,
+        practiceMode: isPracticeMode,
+      };
+      saveSession(session);
+    } else if (session.messages.length === 0) {
+      session.practiceMode = isPracticeMode;
+      saveSession(session);
+    }
+    router.push(`/interview/${id}`);
+  };
+
   return (
     <main className="min-h-screen bg-[#020617] text-white relative overflow-x-hidden">
       {/* Background glows */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-purple-600/6 blur-[140px] rounded-full" />
-        <div className="absolute top-[60vh] -left-32 w-[500px] h-[500px] bg-blue-600/5 blur-[120px] rounded-full" />
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[1100px] h-[500px] bg-purple-600/6 blur-[160px] rounded-full" />
+        <div className="absolute top-[50vh] -left-32 w-[500px] h-[500px] bg-blue-600/5 blur-[120px] rounded-full" />
+        <div className="absolute top-[30vh] right-0 w-[400px] h-[400px] bg-indigo-600/4 blur-[120px] rounded-full" />
       </div>
 
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-6 md:px-10 pt-14 pb-28 relative z-10">
+      <div className="max-w-[1400px] mx-auto px-6 md:px-10 pt-10 pb-24 relative z-10">
 
         {/* ═══════════════════════════════════════
             HERO
         ═══════════════════════════════════════ */}
-        <div className="mb-14 max-w-3xl">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="mb-10 max-w-4xl">
+          <div className="flex items-center gap-2 mb-3">
             <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-purple-400/80 bg-purple-500/10 border border-purple-500/20 px-3 py-1.5 rounded-full">
               <Layers className="w-3 h-3" />
-              System Design Explorer
+              System Design Studio
             </span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-3">
             Explore{" "}
             <span className="relative">
               <span className="bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
@@ -198,7 +267,7 @@ export default function ProblemsPage() {
             {" "}Challenges
           </h1>
           <p className="text-gray-400 text-lg leading-relaxed">
-            Practice real-world architectures with AI feedback. From URL shorteners to distributed systems — each interview adapts to your answers.
+            Practice real-world architectures with AI feedback. Each interview adapts to your answers.
           </p>
         </div>
 
@@ -216,7 +285,7 @@ export default function ProblemsPage() {
             </p>
           </div>
           <button
-            onClick={() => router.push("/interview/url-shortener")}
+            onClick={() => handleStartInterview("url-shortener")}
             className="shrink-0 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[12px] font-semibold hover:bg-emerald-500/25 transition-all whitespace-nowrap"
           >
             Start →
@@ -226,24 +295,25 @@ export default function ProblemsPage() {
         {/* ═══════════════════════════════════════
             FEATURED CARD
         ═══════════════════════════════════════ */}
-        <section className="mb-14">
+        <section className="mb-10">
           <p className="text-[11px] uppercase tracking-widest text-gray-600 font-bold mb-4 flex items-center gap-2">
             <span className="w-4 h-px bg-gray-700" />
             Featured Challenge
             <span className="flex-1 h-px bg-gray-800/60" />
           </p>
 
-          <div className="relative group rounded-3xl border border-purple-500/20 bg-gradient-to-br from-[#0d1230]/80 via-[#080d1e]/90 to-[#020617]/80 backdrop-blur-xl overflow-hidden shadow-2xl hover:border-purple-500/35 transition-all duration-500 hover:-translate-y-0.5">
+          <div className="relative group rounded-3xl border border-purple-500/20 bg-gradient-to-br from-[#0d1230]/80 via-[#080d1e]/90 to-[#020617]/80 backdrop-blur-xl overflow-hidden shadow-2xl hover:border-purple-500/35 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-purple-500/10">
             {/* Glow */}
             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500/60 to-transparent" />
-            <div className="absolute -top-24 -right-24 w-64 h-64 bg-purple-500/10 blur-[80px] rounded-full pointer-events-none" />
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-purple-500/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-purple-500/15 transition-all duration-700" />
+            <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-blue-500/8 blur-[60px] rounded-full pointer-events-none" />
 
             <div className="grid md:grid-cols-2 gap-0">
               {/* Left */}
               <div className="p-8 md:p-10">
                 <div className="flex items-center gap-2 mb-5">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2.5 py-1 rounded-full">
-                    Featured
+                  <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full">
+                    <Star className="w-3 h-3" /> Most Popular
                   </span>
                   <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${difficultyBadge[featured.problem.difficulty]}`}>
                     {featured.problem.difficulty}
@@ -273,17 +343,23 @@ export default function ProblemsPage() {
                   ))}
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                   <button
-                    onClick={() => router.push(`/interview/${featured.problem.id}`)}
-                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold text-[13px] transition-all shadow-lg shadow-purple-500/25 group/btn"
+                    onClick={() => handleStartInterview(featured.problem.id)}
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold text-[13px] transition-all shadow-lg shadow-purple-500/25 hover:scale-[1.03] active:scale-[0.97] group/btn"
                   >
                     Start Interview
                     <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                   </button>
+                  <button
+                    onClick={() => handleTryDemo(featured.problem.id)}
+                    className="flex items-center gap-1.5 px-4 py-3 rounded-xl border border-gray-700/50 bg-gray-900/40 text-gray-400 hover:text-white hover:border-purple-500/30 text-[12px] font-semibold transition-all hover:scale-[1.03] active:scale-[0.97]"
+                  >
+                    <Play className="w-3.5 h-3.5" /> Try Demo
+                  </button>
                   <div className="flex items-center gap-1.5 text-[12px] text-gray-500">
                     <Clock className="w-3.5 h-3.5" />
-                    ~{featured.problem.estimatedMinutes} min
+                    ~{featured.problem.estimatedMinutes}m
                   </div>
                 </div>
               </div>
@@ -308,9 +384,9 @@ export default function ProblemsPage() {
         </section>
 
         {/* ═══════════════════════════════════════
-            FILTERS + SEARCH
+            FILTERS + SEARCH + MODE
         ═══════════════════════════════════════ */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
           <div className="flex gap-2 flex-wrap">
             {(["All", "Beginner", "Intermediate", "Advanced"] as const).map((d) => (
               <button
@@ -330,14 +406,29 @@ export default function ProblemsPage() {
             ))}
           </div>
 
-          <div className="relative w-full sm:w-56">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search challenges..."
-              className="w-full pl-9 pr-3 py-2 rounded-xl bg-gray-900/60 border border-gray-800/50 text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/40 transition"
-            />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
+            {/* Mode Toggle */}
+            <div className="flex items-center gap-3 bg-gray-900/40 border border-gray-800/50 rounded-xl px-4 py-2 shrink-0">
+              <span className={`text-[12px] font-semibold transition-colors ${!isPracticeMode ? "text-white" : "text-gray-500"}`}>Interview</span>
+              <button 
+                onClick={() => setIsPracticeMode(!isPracticeMode)}
+                className="w-10 h-5 bg-gray-800 rounded-full relative transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+              >
+                <div className={`w-4 h-4 rounded-full bg-purple-400 absolute top-0.5 transition-transform ${isPracticeMode ? "translate-x-5" : "translate-x-1"}`} />
+              </button>
+              <span className={`text-[12px] font-semibold transition-colors ${isPracticeMode ? "text-purple-400" : "text-gray-500"}`}>Practice</span>
+            </div>
+
+            {/* Search */}
+            <div className="relative w-full sm:w-56 shrink-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search challenges..."
+                className="w-full pl-9 pr-3 py-2 rounded-xl bg-gray-900/60 border border-gray-800/50 text-[12px] text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/40 transition"
+              />
+            </div>
           </div>
         </div>
 
@@ -362,9 +453,9 @@ export default function ProblemsPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 h-[620px]">
+            <div className="flex flex-col lg:grid lg:grid-cols-[280px_1fr] gap-4 h-auto lg:h-[620px]">
               {/* ── Left: problem list ── */}
-              <div className="flex flex-col gap-1.5 overflow-y-auto pr-1 scrollbar-thin">
+              <div className="flex flex-col gap-1.5 overflow-y-auto pr-1 scrollbar-thin max-h-[300px] lg:max-h-full">
                 {filtered.map((meta) => {
                   const { problem } = meta;
                   const Icon = iconMap[problem.id] ?? Link2;
@@ -403,12 +494,13 @@ export default function ProblemsPage() {
               </div>
 
               {/* ── Right: detail panel ── */}
-              <div className="relative overflow-hidden rounded-2xl border border-gray-800/50 bg-[#080d1e]/60 backdrop-blur-xl">
+              <div className="relative overflow-hidden rounded-2xl border border-gray-800/50 bg-[#080d1e]/60 backdrop-blur-xl transition-all duration-300" key={selectedMeta.problem.id}>
                 {/* Top glow */}
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
                 <ProblemDetailPanel
                   meta={selectedMeta}
                   onStart={() => router.push(`/interview/${selectedMeta.problem.id}`)}
+                  onTryDemo={() => handleTryDemo(selectedMeta.problem.id)}
                 />
               </div>
             </div>
@@ -429,10 +521,10 @@ export default function ProblemsPage() {
             {problemMeta.map(({ problem }) => {
               const Icon = iconMap[problem.id] ?? Link2;
               return (
-                <a
+                <button
                   key={problem.id}
-                  href={`/interview/${problem.id}`}
-                  className={`group flex flex-col p-5 rounded-2xl border border-gray-800/50 bg-black/40 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${difficultyGlow[problem.difficulty]}`}
+                  onClick={() => handleStartInterview(problem.id)}
+                  className={`group flex flex-col p-5 rounded-2xl border border-gray-800/50 bg-black/40 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl text-left ${difficultyGlow[problem.difficulty]}`}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="w-9 h-9 rounded-xl bg-gray-800/60 border border-gray-700/40 flex items-center justify-center shrink-0">
@@ -468,7 +560,7 @@ export default function ProblemsPage() {
                       <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                     </span>
                   </div>
-                </a>
+                </button>
               );
             })}
           </div>
@@ -477,7 +569,7 @@ export default function ProblemsPage() {
         {/* ═══════════════════════════════════════
             BOTTOM STATS
         ═══════════════════════════════════════ */}
-        <div className="mt-14 grid grid-cols-3 gap-4">
+        <div className="mt-14 grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { value: `${problemMeta.length}`, label: "Challenges", icon: Layers },
             { value: "AI", label: "Feedback Engine", icon: Zap },

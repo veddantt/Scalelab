@@ -16,12 +16,12 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-6 md:px-10 h-14 flex items-center justify-between">
           {/* Left */}
           <a href="/" className="flex items-center gap-2 group">
-            <Zap className="w-5 h-5 text-purple-400 group-hover:text-purple-300 transition" />
-            <span className="text-sm font-bold tracking-wide">ScaleLab</span>
+            <Zap className="w-5 h-5 text-purple-400 group-hover:text-purple-300 transition shrink-0" />
+            <span className="hidden sm:inline text-sm font-bold tracking-wide">ScaleLab</span>
           </a>
 
           {/* Right */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <a
               href="/problems"
               className="text-[13px] font-medium text-gray-500 hover:text-gray-300 transition"
@@ -95,7 +95,7 @@ export default function Navbar() {
               /* ─── Logged out: sign in button ─── */
               <button
                 onClick={() => setAuthOpen(true)}
-                className="px-4 py-1.5 rounded-xl bg-gray-900/60 border border-gray-800/50 hover:border-purple-500/30 text-[13px] font-medium text-gray-400 hover:text-white transition"
+                className="px-3 sm:px-4 py-1.5 rounded-xl bg-gray-900/60 border border-gray-800/50 hover:border-purple-500/30 text-[13px] font-medium text-gray-400 hover:text-white transition"
               >
                 Sign In
               </button>

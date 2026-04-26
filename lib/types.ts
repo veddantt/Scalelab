@@ -118,6 +118,12 @@ export interface InterviewSession {
   clarity_score: number | null;
   depth_score: number | null;
   correctness_score: number | null;
+  attempt_number: number;
+  original_session_id: string | null;
+  practice_mode: boolean;
+  improvement_goals: string[] | null;
+  weakest_areas: string[] | null;
+  model_answer: any | null;
   created_at: string;
   updated_at: string;
 }
@@ -185,4 +191,10 @@ export interface SaveSessionPayload {
     isFallback?: boolean;
   };
   review?: Partial<ReviewScore>;
+  attempt_number?: number;
+  original_session_id?: string;
+  practice_mode?: boolean;
+  improvement_goals?: string[];
+  weakest_areas?: string[];
+  model_answer?: any;
 }

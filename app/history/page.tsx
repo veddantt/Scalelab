@@ -144,6 +144,41 @@ export default function HistoryPage() {
           </p>
         </div>
 
+        {/* ─── Progress Analytics ─── */}
+        {!authLoading && user && sessions.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            <div className="bg-gray-900/40 border border-gray-800/50 p-5 rounded-2xl">
+              <p className="text-gray-400 text-sm font-medium mb-1">Total Practices</p>
+              <h3 className="text-3xl font-bold text-white">{sessions.length}</h3>
+            </div>
+            <div className="bg-gray-900/40 border border-gray-800/50 p-5 rounded-2xl">
+              <p className="text-gray-400 text-sm font-medium mb-1">Avg Score</p>
+              <h3 className="text-3xl font-bold text-purple-400">
+                {Math.round(
+                  sessions.reduce((acc, s) => {
+                    const score = (s.review_results && s.review_results.length > 0 && s.review_results[0].final_score) 
+                      ? s.review_results[0].final_score 
+                      : s.overall_score || 0;
+                    return acc + score;
+                  }, 0) / sessions.length
+                )}
+              </h3>
+            </div>
+            <div className="bg-gray-900/40 border border-gray-800/50 p-5 rounded-2xl">
+              <p className="text-gray-400 text-sm font-medium mb-1">Best Score</p>
+              <h3 className="text-3xl font-bold text-green-400">
+                {Math.max(...sessions.map(s => (s.review_results && s.review_results.length > 0 && s.review_results[0].final_score) ? s.review_results[0].final_score : s.overall_score || 0))}
+              </h3>
+            </div>
+            <div className="bg-gray-900/40 border border-gray-800/50 p-5 rounded-2xl">
+              <p className="text-gray-400 text-sm font-medium mb-1">Last Practice</p>
+              <h3 className="text-xl font-bold text-white mt-1">
+                {new Date(sessions[0]?.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+              </h3>
+            </div>
+          </div>
+        )}
+
         {/* ─── Not logged in ─── */}
         {!authLoading && !user && (
           <div className="flex flex-col items-center justify-center py-24 text-center">
@@ -245,21 +280,28 @@ export default function HistoryPage() {
                     <div className="w-10 h-10 rounded-xl bg-gray-800/60 border border-gray-700/40 flex items-center justify-center">
                       <Icon className="w-5 h-5 text-purple-400" />
                     </div>
-                    <div className="flex items-center gap-2">
-                      {score && (
-                        <span className="text-[12px] font-bold px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                          {score}/100
+                    <div className="flex flex-col items-end gap-1.5">
+                      <div className="flex items-center gap-2">
+                        {score && (
+                          <span className="text-[12px] font-bold px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                            {score}/100
+                          </span>
+                        )}
+                        <span
+                          className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+                            isCompleted
+                              ? "bg-green-500/10 text-green-400 border-green-500/20"
+                              : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                          }`}
+                        >
+                          {isCompleted ? "Completed" : "In Progress"}
+                        </span>
+                      </div>
+                      {s.attempt_number > 1 && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                          Attempt {s.attempt_number}
                         </span>
                       )}
-                      <span
-                        className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
-                          isCompleted
-                            ? "bg-green-500/10 text-green-400 border-green-500/20"
-                            : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                        }`}
-                      >
-                        {isCompleted ? "Completed" : "In Progress"}
-                      </span>
                     </div>
                   </div>
 

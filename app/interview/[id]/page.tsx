@@ -4,12 +4,13 @@ export const dynamic = "force-dynamic";
 
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-import { saveSession, getSession } from "@/lib/sessionStorage";
+import { saveSession, getSession, clearSession } from "@/lib/sessionStorage";
 import { getProblem } from "@/lib/scenarios";
 import { INTERVIEW_STEPS, ARCHITECTURE_STYLES } from "@/lib/config/workflow";
+import { getHintForStep } from "@/lib/improvementHints";
 import Navbar from "@/components/Navbar";
 import SaveButton from "@/components/SaveButton";
-import { Loader2, Send, Lock, CheckCircle2, Lightbulb, Zap } from "lucide-react";
+import { Loader2, Send, Lock, CheckCircle2, Lightbulb, Zap, ArrowLeft, RefreshCw, Target } from "lucide-react";
 
 // Steps and architecture styles are imported from lib/config/workflow
 
@@ -39,6 +40,11 @@ export default function InterviewPage() {
     { role: string; content: string; feedback?: string }[]
   >([]);
 
+  const [practiceMode, setPracticeMode] = useState(false);
+  const [weakestAreas, setWeakestAreas] = useState<string[]>([]);
+  const [improvementGoals, setImprovementGoals] = useState<string[]>([]);
+  const [attemptNumber, setAttemptNumber] = useState(1);
+
   useEffect(() => {
     if (problem && messages.length === 0) {
       setMessages([
@@ -61,6 +67,10 @@ export default function InterviewPage() {
         setCurrentStep(session.currentStep);
         setHighestStep(session.highestStep !== undefined ? session.highestStep : session.currentStep);
       }
+      if (session.practiceMode) setPracticeMode(session.practiceMode);
+      if (session.weakestAreas) setWeakestAreas(session.weakestAreas);
+      if (session.improvementGoals) setImprovementGoals(session.improvementGoals);
+      if (session.attemptNumber) setAttemptNumber(session.attemptNumber);
     }
   }, [problemId]);
 
@@ -85,6 +95,8 @@ export default function InterviewPage() {
           messages: newMessages,
           problem,
           step: currentStep,
+          practiceMode,
+          weakestAreas,
         }),
       });
 
@@ -134,6 +146,7 @@ export default function InterviewPage() {
         setHighestStep(newHighestStep);
       }
 
+      const session = getSession(String(problemId));
       saveSession({
         id: String(problemId),
         problem: problem || "",
@@ -141,7 +154,13 @@ export default function InterviewPage() {
         scores: smoothed,
         currentStep: nextStep,
         highestStep: newHighestStep,
-        createdAt: new Date().toISOString(),
+        createdAt: session?.createdAt || new Date().toISOString(),
+        attemptNumber: session?.attemptNumber || 1,
+        originalSessionId: session?.originalSessionId,
+        practiceMode: session?.practiceMode,
+        weakestAreas: session?.weakestAreas,
+        improvementGoals: session?.improvementGoals,
+        modelAnswer: session?.modelAnswer,
       });
     } catch (error) {
       console.error(error);
@@ -265,6 +284,21 @@ export default function InterviewPage() {
               </span>
             </div>
           </div>
+
+          {/* ─── Improvement Mode Banner ─── */}
+          {practiceMode && attemptNumber > 1 && weakestAreas.length > 0 && (
+            <div className="px-6 py-3 bg-blue-900/20 border-b border-blue-500/20 flex items-start gap-3">
+              <div className="w-7 h-7 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                <Target className="w-4 h-4 text-blue-400" />
+              </div>
+              <div>
+                <h3 className="text-blue-400 font-semibold text-xs uppercase tracking-wider mb-0.5">Improvement Mode: Attempt {attemptNumber}</h3>
+                <p className="text-gray-300 text-[13px] leading-relaxed">
+                  {getHintForStep(currentStep + 1, weakestAreas, improvementGoals) || "Focus on your previous feedback and improve your system design step by step."}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Problem Statement */}
           {scenario && (

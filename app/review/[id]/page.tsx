@@ -3,16 +3,20 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { GitMerge, RefreshCw, FileText, HelpCircle, Loader2 } from "lucide-react";
 
 import { getProblem } from "@/lib/scenarios";
-import { getSession } from "@/lib/sessionStorage";
+import { getSession, saveSession, ScaleLabSession } from "@/lib/sessionStorage";
 
 import Navbar from "@/components/Navbar";
 import SaveButton from "@/components/SaveButton";
+import ModelAnswerCard from "@/components/ModelAnswerCard";
+import type { ModelAnswer } from "@/lib/sessionStorage";
 
 export default function ReviewPage() {
     const params = useParams();
+    const router = useRouter();
     const problemId = params.id as string;
     const scenario = getProblem(problemId);
     const problem = scenario?.title;
@@ -23,6 +27,41 @@ export default function ReviewPage() {
     const [error, setError] = useState<string | null>(null);
     const [sharing, setSharing] = useState(false);
     const [shareUrl, setShareUrl] = useState<string | null>(null);
+    const [modelAnswer, setModelAnswer] = useState<ModelAnswer | null>(null);
+    const [explainingMap, setExplainingMap] = useState<Record<string, boolean>>({});
+    const [explanations, setExplanations] = useState<Record<string, string>>({});
+
+    const handleExplainMistake = async (comp: string, reasoning: string) => {
+        setExplainingMap(prev => ({ ...prev, [comp]: true }));
+        try {
+            const session = getSession(problemId);
+            const userAnswers = session?.messages
+                ?.filter((m: any) => m.role === "user")
+                .map((m: any) => m.content)
+                .join("\n\n");
+                
+            const res = await fetch("/api/explain-mistake", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    problemTitle: scenario?.title,
+                    problemStatement: scenario?.description,
+                    component: comp,
+                    reasoning,
+                    userAnswers
+                })
+            });
+            
+            if (!res.ok) throw new Error("Failed to get explanation");
+            const data = await res.json();
+            setExplanations(prev => ({ ...prev, [comp]: data.explanation }));
+        } catch (err) {
+            console.error(err);
+            alert("Failed to load explanation.");
+        } finally {
+            setExplainingMap(prev => ({ ...prev, [comp]: false }));
+        }
+    };
 
     const handleShare = async () => {
         setSharing(true);
@@ -42,6 +81,11 @@ export default function ReviewPage() {
                         scores: session.scores || {},
                         architecture: session.architecture || {},
                         review: review,
+                        model_answer: session.modelAnswer || null,
+                        attempt_number: session.attemptNumber || 1,
+                        practice_mode: session.practiceMode || false,
+                        improvement_goals: session.improvementGoals || null,
+                        weakest_areas: session.weakestAreas || null,
                     },
                 ])
                 .select()
@@ -80,6 +124,50 @@ export default function ReviewPage() {
         loadReview();
     }, [problemId]);
 
+    // Separately load cached model answer from session
+    useEffect(() => {
+        const session = getSession(problemId);
+        if (session?.modelAnswer) {
+            setModelAnswer(session.modelAnswer);
+        }
+    }, [problemId]);
+
+    const handleModelAnswerGenerated = (answer: ModelAnswer) => {
+        const session = getSession(problemId);
+        if (session) {
+            session.modelAnswer = answer;
+            saveSession(session);
+        }
+        setModelAnswer(answer);
+    };
+
+    const handleRetry = () => {
+        const session = getSession(problemId);
+        if (!session) return;
+        
+        const newSession: ScaleLabSession = {
+            id: problemId,
+            problem: problemId,
+            messages: [],
+            scores: { clarity: 0, depth: 0, correctness: 0 },
+            currentStep: 0,
+            createdAt: new Date().toISOString(),
+            attemptNumber: (session.attemptNumber || 1) + 1,
+            originalSessionId: session.originalSessionId || session.id,
+            practiceMode: true,
+            weakestAreas: review?.weaknesses || [],
+            improvementGoals: review?.weaknesses || [],
+            modelAnswer: session.modelAnswer
+        };
+        
+        saveSession(newSession);
+        router.push(`/interview/${problemId}`);
+    };
+
+    const handleExport = () => {
+        window.print();
+    };
+
     if (!scenario) {
         return (
             <div className="min-h-screen flex flex-col bg-black text-white">
@@ -115,7 +203,7 @@ export default function ReviewPage() {
             <Navbar />
             <main className="flex-1 p-6 md:p-12">
             <div className="max-w-6xl mx-auto">
-                <div className="flex items-center justify-between mb-12 border-b border-gray-800 pb-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 mb-12 border-b border-gray-800 pb-6">
                     <div>
                         <div className="flex items-center gap-2 text-[11px] text-gray-500 mb-2 font-medium tracking-wide">
                             <a href="/problems" className="hover:text-white transition">Problems</a>
@@ -126,7 +214,7 @@ export default function ReviewPage() {
                         </div>
                         <h1 className="text-3xl font-bold">{problem}</h1>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap gap-3">
                         <SaveButton problemId={problemId} />
                         <a
                             href={`/architecture/${problemId}`}
@@ -155,6 +243,13 @@ export default function ReviewPage() {
                                 )}
                             </button>
                         )}
+                        <button
+                            onClick={handleExport}
+                            className="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-xl transition text-sm font-medium flex items-center gap-2 print:hidden"
+                        >
+                            <FileText className="w-4 h-4" />
+                            Export
+                        </button>
                     </div>
                 </div>
 
@@ -246,9 +341,36 @@ export default function ReviewPage() {
                                 <h3 className="text-xl font-bold mb-6 text-white">Component Explanations</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {review.componentExplanations?.map((comp: any, i: number) => (
-                                        <div key={i} className="bg-gray-900/50 p-5 rounded-2xl border border-gray-800/50">
+                                        <div key={i} className="bg-gray-900/50 p-5 rounded-2xl border border-gray-800/50 flex flex-col">
                                             <h4 className="font-semibold text-blue-400 mb-2">{comp.component}</h4>
-                                            <p className="text-sm text-gray-400 leading-relaxed">{comp.reasoning}</p>
+                                            <p className="text-sm text-gray-400 leading-relaxed flex-1">{comp.reasoning}</p>
+                                            
+                                            {/* Explain Mistake Button/Result */}
+                                            <div className="mt-4 pt-4 border-t border-gray-800/50 print:hidden">
+                                                {explanations[comp.component] ? (
+                                                    <div className="bg-blue-900/20 p-4 rounded-xl border border-blue-500/20">
+                                                        <h5 className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                                            <HelpCircle className="w-3.5 h-3.5" /> Coach Explanation
+                                                        </h5>
+                                                        <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+                                                            {explanations[comp.component]}
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleExplainMistake(comp.component, comp.reasoning)}
+                                                        disabled={explainingMap[comp.component]}
+                                                        className="flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-blue-400 transition-colors disabled:opacity-50 disabled:hover:text-gray-400"
+                                                    >
+                                                        {explainingMap[comp.component] ? (
+                                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                        ) : (
+                                                            <HelpCircle className="w-3.5 h-3.5" />
+                                                        )}
+                                                        {explainingMap[comp.component] ? "Analyzing..." : "Explain My Mistake"}
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -272,6 +394,95 @@ export default function ReviewPage() {
                         </div>
                     </div>
                 ) : null}
+
+                {/* ─── Model Answer ─── */}
+                {!loading && review && (
+                    <div className="mt-10">
+                        <ModelAnswerCard
+                            problemId={problemId}
+                            problemTitle={scenario?.title ?? problemId}
+                            problemStatement={scenario?.description ?? ""}
+                            userAnswers={
+                                (() => {
+                                    const session = getSession(problemId);
+                                    return session?.messages
+                                        ?.filter((m: any) => m.role === "user")
+                                        .map((m: any) => m.content)
+                                        .join("\n\n");
+                                })()
+                            }
+                            architectureResult={
+                                (() => {
+                                    const session = getSession(problemId);
+                                    return session?.architecture ?? null;
+                                })()
+                            }
+                            reviewScores={review}
+                            weaknesses={review?.weaknesses}
+                            cachedAnswer={modelAnswer}
+                            onAnswerGenerated={handleModelAnswerGenerated}
+                        />
+                    </div>
+                )}
+
+                {/* ─── Comparison & Retry Section ─── */}
+                {!loading && review && (
+                    <div className="mt-10 space-y-8 print:hidden">
+                        {/* Comparison */}
+                        {modelAnswer && (
+                            <div className="bg-gray-900/40 p-8 rounded-3xl border border-gray-800/50">
+                                <h3 className="text-xl font-bold mb-6 text-white flex items-center gap-2">
+                                    <GitMerge className="w-5 h-5 text-purple-400" />
+                                    Your Design vs Model Answer
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="bg-black/50 p-5 rounded-2xl border border-red-500/10">
+                                        <h4 className="text-red-400 font-semibold mb-3">Missing from your answer</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {review.weaknesses?.map((w: string, i: number) => (
+                                                <span key={i} className="text-[11px] px-2.5 py-1 rounded-md bg-red-500/10 text-red-300 border border-red-500/20">
+                                                    {w.substring(0, 40)}{w.length > 40 ? "..." : ""}
+                                                </span>
+                                            ))}
+                                            {(!review.weaknesses || review.weaknesses.length === 0) && (
+                                                <span className="text-gray-500 text-sm">Great job, no major misses!</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="bg-black/50 p-5 rounded-2xl border border-green-500/10">
+                                        <h4 className="text-green-400 font-semibold mb-3">Model Answer Focus</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {modelAnswer.bottlenecks?.slice(0, 3).map((b: string, i: number) => (
+                                                <span key={i} className="text-[11px] px-2.5 py-1 rounded-md bg-green-500/10 text-green-300 border border-green-500/20">
+                                                    {b.substring(0, 40)}{b.length > 40 ? "..." : ""}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Retry CTA */}
+                        <div className="rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-950/20 to-purple-950/10 overflow-hidden p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div>
+                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <RefreshCw className="w-5 h-5 text-blue-400" />
+                                    Retry with Feedback
+                                </h3>
+                                <p className="text-gray-400 text-sm mt-2 max-w-xl">
+                                    Practice this problem again in Improvement Mode. You'll get targeted hints based on your weakest areas from this attempt.
+                                </p>
+                            </div>
+                            <button
+                                onClick={handleRetry}
+                                className="shrink-0 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-500/20 hover:scale-[1.02]"
+                            >
+                                Start Improved Attempt
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </main>
         </div>

@@ -49,6 +49,12 @@ export async function saveSession(body: SaveSessionPayload) {
       clarity_score: body.scores.clarity || null,
       depth_score: body.scores.depth || null,
       correctness_score: body.scores.correctness || null,
+      attempt_number: body.attempt_number || 1,
+      original_session_id: body.original_session_id || null,
+      practice_mode: body.practice_mode || false,
+      improvement_goals: body.improvement_goals || null,
+      weakest_areas: body.weakest_areas || null,
+      model_answer: body.model_answer || null,
     })
     .select("id")
     .single();

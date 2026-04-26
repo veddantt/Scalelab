@@ -21,7 +21,7 @@ interface MiniArchPreviewProps {
 
 /**
  * Lightweight static architecture diagram — no ReactFlow.
- * Lays out nodes in a horizontal flow, showing connections as SVG arrows.
+ * Lays out nodes in a horizontal flow, showing connections as animated SVG arrows.
  */
 export default function MiniArchPreview({ nodes, edges, compact = false }: MiniArchPreviewProps) {
   // Compute a left-to-right ordering based on edge traversal (simple BFS)
@@ -59,6 +59,22 @@ export default function MiniArchPreview({ nodes, edges, compact = false }: MiniA
       className={`w-full overflow-x-auto ${compact ? "py-2" : "py-4"}`}
       aria-label="Architecture preview diagram"
     >
+      {/* Inline keyframes for connector animation */}
+      <style>{`
+        @keyframes flowPulse {
+          0%, 100% { opacity: 0.35; }
+          50% { opacity: 0.8; }
+        }
+        @keyframes dotTravel {
+          0% { transform: translateX(-2px); opacity: 0; }
+          20% { opacity: 1; }
+          80% { opacity: 1; }
+          100% { transform: translateX(18px); opacity: 0; }
+        }
+        .connector-line { animation: flowPulse 2.5s ease-in-out infinite; }
+        .connector-dot  { animation: dotTravel 1.8s ease-in-out infinite; }
+      `}</style>
+
       <div className="flex items-center gap-0 min-w-max mx-auto w-fit">
         {cols.map((colNodes, ci) => (
           <div key={ci} className="flex items-center gap-0">
@@ -74,7 +90,7 @@ export default function MiniArchPreview({ nodes, edges, compact = false }: MiniA
                       ${compact ? "px-2.5 py-1.5 text-[10px]" : "px-3 py-2 text-[11px]"}
                       rounded-xl border ${c.bg} ${c.border} ${c.text}
                       font-semibold whitespace-nowrap
-                      shadow-sm
+                      shadow-sm hover:shadow-md hover:scale-[1.03]
                       transition-all duration-300
                     `}
                   >
@@ -85,18 +101,28 @@ export default function MiniArchPreview({ nodes, edges, compact = false }: MiniA
               })}
             </div>
 
-            {/* Arrow connector — drawn between columns */}
+            {/* Animated connector between columns */}
             {ci < cols.length - 1 && (
-              <div className="flex items-center mx-1.5 shrink-0">
+              <div className="flex items-center mx-1.5 shrink-0 relative">
                 <svg
-                  width={compact ? "20" : "28"}
-                  height={compact ? "12" : "16"}
-                  viewBox="0 0 28 16"
+                  width={compact ? "24" : "32"}
+                  height={compact ? "14" : "18"}
+                  viewBox="0 0 32 18"
                   fill="none"
-                  className="opacity-50"
+                  className="connector-line"
                 >
-                  <line x1="0" y1="8" x2="20" y2="8" stroke="#6366f1" strokeWidth="1.5" strokeDasharray="3 2" />
-                  <polyline points="16,4 22,8 16,12" stroke="#6366f1" strokeWidth="1.5" fill="none" strokeLinejoin="round" />
+                  <line x1="0" y1="9" x2="22" y2="9" stroke="#6366f1" strokeWidth="1.5" strokeDasharray="3 2" />
+                  <polyline points="18,5 24,9 18,13" stroke="#6366f1" strokeWidth="1.5" fill="none" strokeLinejoin="round" />
+                </svg>
+                {/* Travelling dot */}
+                <svg
+                  width={compact ? "24" : "32"}
+                  height={compact ? "14" : "18"}
+                  viewBox="0 0 32 18"
+                  fill="none"
+                  className="absolute inset-0"
+                >
+                  <circle cx="4" cy="9" r="2" fill="#818cf8" className="connector-dot" />
                 </svg>
               </div>
             )}

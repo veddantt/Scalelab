@@ -209,7 +209,7 @@ function ArchitectureInner() {
       <Navbar />
 
       {/* ─── Sub-header ─── */}
-      <div className="px-6 py-3 border-b border-gray-800/50 bg-black/60 backdrop-blur-xl flex items-center justify-between z-10">
+      <div className="px-6 py-3 border-b border-gray-800/50 bg-black/60 backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 z-10">
         <div className="flex flex-col">
           <div className="flex items-center gap-2 text-[11px] text-gray-500 mb-1 font-medium tracking-wide">
             <a href="/problems" className="hover:text-white transition">Problems</a>
@@ -225,7 +225,7 @@ function ArchitectureInner() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
           <SaveButton problemId={problemId} />
           {systemInsights?.score != null && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gray-900/60 border border-gray-800/50">
@@ -247,10 +247,10 @@ function ArchitectureInner() {
       </div>
 
       {/* ─── Main ─── */}
-      <div className="flex-1 flex min-h-0 overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
 
         {/* ─── Canvas ─── */}
-        <div className="flex-1 relative" ref={flowRef}>
+        <div className="flex-1 min-h-[55vh] lg:min-h-0 relative shrink-0 border-b lg:border-b-0 lg:border-r border-gray-800/50" ref={flowRef}>
           {loading ? (
             <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-4">
               <div className="relative">
@@ -282,7 +282,7 @@ function ArchitectureInner() {
 
               {/* ─── Floating style selector ─── */}
               <Panel position="top-left">
-                <div className="flex gap-1.5 p-1.5 bg-gray-900/90 backdrop-blur-xl border border-gray-700/50 rounded-xl shadow-xl">
+                <div className="flex flex-wrap gap-1.5 p-1.5 bg-gray-900/90 backdrop-blur-xl border border-gray-700/50 rounded-xl shadow-xl max-w-[280px] sm:max-w-none">
                   {ARCH_STYLES.map((s) => {
                     const SIcon = s.icon;
                     const active = archStyle === s.id;
@@ -313,7 +313,7 @@ function ArchitectureInner() {
         </div>
 
         {/* ─── Right Panel ─── */}
-        <aside className="w-[380px] border-l border-gray-800/50 bg-[#020617] flex flex-col overflow-hidden">
+        <aside className="w-full lg:w-[380px] shrink-0 bg-[#020617] flex flex-col overflow-hidden">
           {/* Tab bar */}
           <div className="flex border-b border-gray-800/50 shrink-0">
             {([

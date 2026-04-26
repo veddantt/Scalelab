@@ -11,6 +11,8 @@ export interface ChatAIRequest {
   messages: InterviewMessage[];
   problem: string;
   step: number;
+  practiceMode?: boolean;
+  weakestAreas?: string[];
 }
 
 export interface ChatAIResponse {
@@ -22,11 +24,20 @@ export interface ChatAIResponse {
   followUp?: string;
 }
 
-function buildSystemPrompt(problem: string, step: number): string {
-  return `You are a senior FAANG system design interviewer conducting a mock interview.
+function buildSystemPrompt(problem: string, step: number, practiceMode?: boolean, weakestAreas?: string[]): string {
+  const toneInstruction = practiceMode
+    ? "You are a supportive, encouraging system design coach. The user is in practice mode and is trying to improve."
+    : "You are a senior FAANG system design interviewer conducting a mock interview. Be professional, objective, and somewhat challenging.";
 
+  const weaknessContext = practiceMode && weakestAreas && weakestAreas.length > 0
+    ? `\nNote: The user has previously struggled with these areas: ${weakestAreas.join(", ")}. Provide gentle guidance if they struggle here again.`
+    : "";
+
+  return `${toneInstruction}
+  
 Problem: ${problem}
 Current step index: ${step} (0=Requirements, 1=Scale, 2=APIs, 3=Database, 4=Architecture, 5=Bottlenecks, 6=Review)
+${weaknessContext}
 
 Your role:
 - Ask ONE focused question at a time about the current step.
@@ -83,7 +94,7 @@ export async function runChatTurn(req: ChatAIRequest): Promise<ChatAIResponse> {
     return FALLBACK_RESPONSE;
   }
 
-  const systemPrompt = buildSystemPrompt(req.problem, req.step);
+  const systemPrompt = buildSystemPrompt(req.problem, req.step, req.practiceMode, req.weakestAreas);
 
   // Keep last 10 messages to avoid token bloat
   const trimmed = req.messages.slice(-10);

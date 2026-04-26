@@ -10,6 +10,11 @@ export type ScaleLabSession = {
   currentStep: number;
   highestStep?: number;
   createdAt: string;
+  attemptNumber?: number;
+  originalSessionId?: string;
+  practiceMode?: boolean;
+  weakestAreas?: string[];
+  improvementGoals?: string[];
   architecture?: {
     nodes: any[];
     edges: any[];
@@ -22,6 +27,37 @@ export type ScaleLabSession = {
   };
   explanations?: Record<string, any>;
   review?: any;
+  modelAnswer?: ModelAnswer;
+};
+
+export type ApiDesignEntry = {
+  method: string;
+  endpoint: string;
+  purpose: string;
+};
+
+export type DataModelEntry = {
+  entity: string;
+  fields: string[];
+  notes: string;
+};
+
+export type ArchitectureEntry = {
+  component: string;
+  responsibility: string;
+};
+
+export type ModelAnswer = {
+  overview: string;
+  requirements: string[];
+  scaleAssumptions: string[];
+  apiDesign: ApiDesignEntry[];
+  dataModel: DataModelEntry[];
+  architecture: ArchitectureEntry[];
+  tradeoffs: string[];
+  bottlenecks: string[];
+  scalingPlan: string[];
+  howToExplainInInterview: string;
 };
 
 export function saveSession(session: ScaleLabSession) {
@@ -39,4 +75,9 @@ export function getAllSessions() {
   return Object.keys(localStorage)
     .filter((key) => key.startsWith("scalelab-session-"))
     .map((key) => JSON.parse(localStorage.getItem(key)!));
+}
+
+export function clearSession(id: string) {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(`scalelab-session-${id}`);
 }
