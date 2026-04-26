@@ -203,6 +203,8 @@ export default function InterviewPage() {
 
       saveSession(session);
 
+      // Reset loading state before navigation so it doesn't leak on back-navigation
+      setGenerating(false);
       router.push(`/architecture/${problemId}`);
     } catch (err) {
       console.error("Failed to generate architecture:", err);

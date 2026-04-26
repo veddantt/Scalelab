@@ -7,7 +7,7 @@ import { useParams } from "next/navigation";
 
 import { getProblem } from "@/lib/scenarios";
 import { getSession } from "@/lib/sessionStorage";
-import { supabase } from "@/lib/supabase";
+
 import Navbar from "@/components/Navbar";
 import SaveButton from "@/components/SaveButton";
 
@@ -30,7 +30,10 @@ export default function ReviewPage() {
             const session = getSession(problemId);
             if (!session) throw new Error("No session found in local storage.");
 
-            const { data, error: dbError } = await supabase
+            const { createClient } = await import("@/lib/supabase/client");
+            const supabaseClient = createClient();
+
+            const { data, error: dbError } = await supabaseClient
                 .from("sessions")
                 .insert([
                     {

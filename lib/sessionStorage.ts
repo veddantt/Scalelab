@@ -18,6 +18,7 @@ export type ScaleLabSession = {
     bottlenecks?: string[];
     tradeoffs?: string[];
     scalingRecommendations?: string[];
+    isFallback?: boolean;
   };
   explanations?: Record<string, any>;
   review?: any;
