@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { GitMerge, RefreshCw, FileText, HelpCircle, Loader2 } from "lucide-react";
+import { GitMerge, RefreshCw, FileText, HelpCircle, Loader2, ChevronRight } from "lucide-react";
 
 import { getProblem } from "@/lib/scenarios";
 import { getSession, saveSession, ScaleLabSession } from "@/lib/sessionStorage";
@@ -13,6 +13,21 @@ import Navbar from "@/components/Navbar";
 import SaveButton from "@/components/SaveButton";
 import ModelAnswerCard from "@/components/ModelAnswerCard";
 import type { ModelAnswer } from "@/lib/sessionStorage";
+
+function CollapsibleSection({ title, children, defaultOpen = false, className = "bg-gray-900/40 border border-gray-800/50" }: { title: React.ReactNode, children: React.ReactNode, defaultOpen?: boolean, className?: string }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  return (
+    <div className={`p-5 lg:p-6 rounded-3xl ${className}`}>
+      <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between text-left focus:outline-none lg:pointer-events-none">
+        {title}
+        <ChevronRight className={`w-5 h-5 text-gray-500 lg:hidden transition-transform duration-300 ${isOpen ? "rotate-90" : ""}`} />
+      </button>
+      <div className={`overflow-hidden transition-all duration-500 lg:max-h-none lg:opacity-100 lg:mt-4 ${isOpen ? "max-h-[2500px] opacity-100 mt-4" : "max-h-0 opacity-0"}`}>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export default function ReviewPage() {
     const params = useParams();
@@ -214,7 +229,7 @@ export default function ReviewPage() {
                         </div>
                         <h1 className="text-3xl font-bold">{problem}</h1>
                     </div>
-                    <div className="flex flex-wrap gap-3">
+                    <div className="hidden lg:flex flex-wrap gap-3">
                         <SaveButton problemId={problemId} />
                         <a
                             href={`/architecture/${problemId}`}
@@ -301,10 +316,7 @@ export default function ReviewPage() {
                                 </div>
                             </div>
 
-                            <div className="bg-gray-900/40 p-6 rounded-3xl border border-gray-800/50">
-                                <h3 className="text-green-400 font-semibold mb-4 flex items-center gap-2">
-                                    <span className="bg-green-500/20 p-1 rounded-md">👍</span> Strengths
-                                </h3>
+                            <CollapsibleSection title={<h3 className="text-green-400 font-semibold flex items-center gap-2"><span className="bg-green-500/20 p-1 rounded-md">👍</span> Strengths</h3>} defaultOpen={true}>
                                 <ul className="space-y-3">
                                     {review.strengths?.map((s: string, i: number) => (
                                         <li key={i} className="text-gray-300 text-sm leading-relaxed border-l-2 border-green-500/30 pl-3 py-1 break-words">
@@ -312,12 +324,9 @@ export default function ReviewPage() {
                                         </li>
                                     ))}
                                 </ul>
-                            </div>
+                            </CollapsibleSection>
 
-                            <div className="bg-gray-900/40 p-6 rounded-3xl border border-gray-800/50">
-                                <h3 className="text-red-400 font-semibold mb-4 flex items-center gap-2">
-                                    <span className="bg-red-500/20 p-1 rounded-md">⚠️</span> Weaknesses
-                                </h3>
+                            <CollapsibleSection title={<h3 className="text-red-400 font-semibold flex items-center gap-2"><span className="bg-red-500/20 p-1 rounded-md">⚠️</span> Weaknesses</h3>} defaultOpen={true}>
                                 <ul className="space-y-3">
                                     {review.weaknesses?.map((w: string, i: number) => (
                                         <li key={i} className="text-gray-300 text-sm leading-relaxed border-l-2 border-red-500/30 pl-3 py-1 break-words">
@@ -325,20 +334,18 @@ export default function ReviewPage() {
                                         </li>
                                     ))}
                                 </ul>
-                            </div>
+                            </CollapsibleSection>
                         </div>
 
                         {/* Right Column: Deep Dive */}
-                        <div className="lg:col-span-2 space-y-8">
-                            <div className="bg-[#0f172a] p-8 rounded-3xl border border-gray-800 shadow-xl">
-                                <h3 className="text-xl font-bold mb-4 text-white">System Architecture Summary</h3>
+                        <div className="lg:col-span-2 space-y-4 lg:space-y-8">
+                            <CollapsibleSection className="bg-[#0f172a] border border-gray-800 shadow-xl" title={<h3 className="text-lg lg:text-xl font-bold text-white">System Architecture Summary</h3>}>
                                 <p className="text-gray-300 leading-relaxed text-sm">
                                     {review.architectureSummary}
                                 </p>
-                            </div>
+                            </CollapsibleSection>
 
-                            <div className="bg-[#020617] p-8 rounded-3xl border border-gray-800 shadow-xl">
-                                <h3 className="text-xl font-bold mb-6 text-white">Component Explanations</h3>
+                            <CollapsibleSection className="bg-[#020617] border border-gray-800 shadow-xl" title={<h3 className="text-lg lg:text-xl font-bold text-white">Component Explanations</h3>}>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {review.componentExplanations?.map((comp: any, i: number) => (
                                         <div key={i} className="bg-gray-900/50 p-5 rounded-2xl border border-gray-800/50 flex flex-col">
@@ -374,23 +381,22 @@ export default function ReviewPage() {
                                         </div>
                                     ))}
                                 </div>
-                            </div>
+                            </CollapsibleSection>
 
-                            <div className="bg-gradient-to-br from-green-900/20 to-emerald-900/10 p-8 rounded-3xl border border-green-500/20 shadow-xl">
-                                <h3 className="text-xl font-bold mb-6 text-green-400">Recommended Improvements</h3>
+                            <CollapsibleSection className="bg-gradient-to-br from-green-900/20 to-emerald-900/10 border border-green-500/20 shadow-xl" title={<h3 className="text-lg lg:text-xl font-bold text-green-400">Recommended Improvements</h3>}>
                                 <div className="space-y-4">
                                     {review.recommendedImprovements?.map((rec: string, i: number) => (
-                                        <div key={i} className="flex gap-4 p-4 bg-black/40 rounded-2xl border border-gray-800/50">
-                                            <div className="w-8 h-8 rounded-full bg-green-500/10 text-green-400 flex items-center justify-center font-bold shrink-0 text-sm">
+                                        <div key={i} className="flex gap-3 lg:gap-4 p-4 bg-black/40 rounded-2xl border border-gray-800/50">
+                                            <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-full bg-green-500/10 text-green-400 flex items-center justify-center font-bold shrink-0 text-sm">
                                                 {i + 1}
                                             </div>
-                                            <p className="text-gray-300 text-sm leading-relaxed pt-1.5 break-words">
+                                            <p className="text-gray-300 text-[13px] lg:text-sm leading-relaxed pt-1 break-words">
                                                 {rec}
                                             </p>
                                         </div>
                                     ))}
                                 </div>
-                            </div>
+                            </CollapsibleSection>
                         </div>
                     </div>
                 ) : null}
@@ -485,6 +491,31 @@ export default function ReviewPage() {
                 )}
             </div>
         </main>
+        
+        {/* Mobile Sticky Action Bar */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-[#020617]/90 backdrop-blur-xl border-t border-gray-800 flex justify-between gap-2 z-50 print:hidden">
+            <a
+                href="/problems"
+                className="px-4 py-2.5 bg-white text-black hover:bg-gray-200 rounded-xl transition text-[13px] font-semibold flex-1 text-center"
+            >
+                Back
+            </a>
+            {!loading && !error && review && (
+                <button
+                    onClick={handleShare}
+                    disabled={sharing || !!shareUrl}
+                    className="px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl transition text-[13px] font-semibold flex-1 text-center shadow-lg disabled:opacity-50"
+                >
+                    {sharing ? "Sharing..." : shareUrl ? "✓ Shared" : "Share"}
+                </button>
+            )}
+            <a
+                href={`/architecture/${problemId}`}
+                className="px-4 py-2.5 bg-gray-800 text-white hover:bg-gray-700 rounded-xl transition text-[13px] font-semibold flex-1 text-center whitespace-nowrap"
+            >
+                Architecture
+            </a>
+        </div>
         </div>
     );
 }

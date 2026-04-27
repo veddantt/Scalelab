@@ -1,6 +1,5 @@
 // server/ai/chat.ts
-// All OpenRouter calls for the live interview chat.
-// This module is server-only — never imported by client components.
+// Server-only AI service for ScaleLab interview chat.
 
 import type { InterviewMessage, InterviewScores } from "@/lib/types";
 
@@ -24,44 +23,59 @@ export interface ChatAIResponse {
   followUp?: string;
 }
 
-function buildSystemPrompt(problem: string, step: number, practiceMode?: boolean, weakestAreas?: string[]): string {
+function buildSystemPrompt(
+  problem: string,
+  step: number,
+  practiceMode?: boolean,
+  weakestAreas?: string[]
+): string {
   const toneInstruction = practiceMode
-    ? "You are a supportive, encouraging system design coach. The user is in practice mode and is trying to improve."
-    : "You are a senior FAANG system design interviewer conducting a mock interview. Be professional, objective, and somewhat challenging.";
+    ? "You are a supportive system design coach helping the user improve through practice."
+    : "You are a senior FAANG system design interviewer conducting a realistic mock interview.";
 
-  const weaknessContext = practiceMode && weakestAreas && weakestAreas.length > 0
-    ? `\nNote: The user has previously struggled with these areas: ${weakestAreas.join(", ")}. Provide gentle guidance if they struggle here again.`
-    : "";
+  const weaknessContext =
+    practiceMode && weakestAreas?.length
+      ? `\nThe user previously struggled with: ${weakestAreas.join(", ")}. Probe those areas when relevant.`
+      : "";
 
   return `${toneInstruction}
-  
+
 Problem: ${problem}
-Current step index: ${step} (0=Requirements, 1=Scale, 2=APIs, 3=Database, 4=Architecture, 5=Bottlenecks, 6=Review)
+Current step index: ${step}
+Step mapping:
+0=Requirements
+1=Scale
+2=APIs
+3=Database
+4=Architecture
+5=Bottlenecks
+6=Review
 ${weaknessContext}
 
-Your role:
-- Ask ONE focused question at a time about the current step.
-- Be concise (1–3 sentences).
-- Challenge weak or vague answers with a follow-up.
-- Only advance when the candidate gives a sufficiently complete answer.
+Rules:
+- Ask exactly ONE focused question.
+- Keep the reply concise.
+- Challenge vague answers.
+- Advance only when the answer is sufficiently complete.
+- Scores must reflect the user's latest answer.
 
-Return ONLY valid JSON (no markdown):
+Return ONLY valid JSON:
 {
-  "reply": "Your next question or follow-up to the candidate",
-  "feedback": "Brief coaching note on their last answer (1 sentence)",
+  "reply": "next question or follow-up",
+  "feedback": "brief feedback on the user's last answer",
   "scores": {
-    "clarity": <1-10>,
-    "depth": <1-10>,
-    "correctness": <1-10>
+    "clarity": 1,
+    "depth": 1,
+    "correctness": 1
   },
-  "shouldAdvance": <true|false>,
-  "reason": "Why you are or are not advancing",
-  "followUp": "Optional deeper follow-up question"
+  "shouldAdvance": false,
+  "reason": "why the user should or should not advance",
+  "followUp": "optional deeper follow-up"
 }`;
 }
 
 function clampScores(scores: InterviewScores): InterviewScores {
-  const clamp = (n: number) => Math.min(10, Math.max(1, Math.round(n)));
+  const clamp = (n: number) => Math.min(10, Math.max(1, Math.round(Number(n))));
   return {
     clarity: clamp(scores.clarity),
     depth: clamp(scores.depth),
@@ -69,87 +83,98 @@ function clampScores(scores: InterviewScores): InterviewScores {
   };
 }
 
-function tryParseJSON(raw: string): ChatAIResponse | null {
-  try {
-    const cleaned = raw.replace(/```json/g, "").replace(/```/g, "").trim();
-    return JSON.parse(cleaned);
-  } catch {
-    return null;
-  }
-}
+function parseAIResponse(raw: string): ChatAIResponse {
+  const cleaned = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+  const parsed = JSON.parse(cleaned);
 
-const FALLBACK_RESPONSE: ChatAIResponse = {
-  reply:
-    "That's a good start. Could you go deeper on the specific components you'd choose and why?",
-  feedback: "Answer received — continue elaborating.",
-  scores: { clarity: 5, depth: 5, correctness: 5 },
-  shouldAdvance: false,
-  reason: "Fallback response due to API error.",
-};
+  if (!parsed.reply || !parsed.scores) {
+    throw new Error("Invalid AI response shape");
+  }
+
+  return {
+    reply: String(parsed.reply),
+    feedback: String(parsed.feedback ?? ""),
+    scores: clampScores(parsed.scores),
+    shouldAdvance: Boolean(parsed.shouldAdvance),
+    reason: String(parsed.reason ?? ""),
+    followUp: parsed.followUp ? String(parsed.followUp) : undefined,
+  };
+}
 
 export async function runChatTurn(req: ChatAIRequest): Promise<ChatAIResponse> {
   const apiKey = process.env.OPENROUTER_API_KEY;
+
   if (!apiKey) {
-    console.warn("[chat] Missing OPENROUTER_API_KEY — returning fallback");
-    return FALLBACK_RESPONSE;
+    throw new Error("Missing OPENROUTER_API_KEY");
   }
 
-  const systemPrompt = buildSystemPrompt(req.problem, req.step, req.practiceMode, req.weakestAreas);
+  if (!req.problem || typeof req.step !== "number") {
+    throw new Error("Invalid chat request");
+  }
 
-  // Keep last 10 messages to avoid token bloat
-  const trimmed = req.messages.slice(-10);
+  const systemPrompt = buildSystemPrompt(
+    req.problem,
+    req.step,
+    req.practiceMode,
+    req.weakestAreas
+  );
+
+  const trimmedMessages = req.messages.slice(-10);
 
   const openRouterMessages = [
     { role: "system", content: systemPrompt },
-    ...trimmed.map((m) => ({
+    ...trimmedMessages.map((m) => ({
       role: m.role === "ai" ? "assistant" : "user",
       content: m.content,
     })),
   ];
 
-  async function callAPI(): Promise<string | null> {
+  async function callOpenRouter(messages: typeof openRouterMessages): Promise<string> {
     const res = await fetch(OPENROUTER_BASE, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:3000",
+        "HTTP-Referer": "https://scalelab-ai.vercel.app",
         "X-Title": "ScaleLab",
       },
-      body: JSON.stringify({ model: MODEL, messages: openRouterMessages }),
+      body: JSON.stringify({
+        model: MODEL,
+        messages,
+        temperature: 0.4,
+      }),
     });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`OpenRouter request failed: ${res.status} ${errorText}`);
+    }
+
     const data = await res.json();
-    return data.choices?.[0]?.message?.content ?? null;
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      throw new Error("OpenRouter returned empty response");
+    }
+
+    return content;
   }
 
-  // First attempt
-  let content = await callAPI();
-  let parsed = content ? tryParseJSON(content) : null;
+  try {
+    const content = await callOpenRouter(openRouterMessages);
+    return parseAIResponse(content);
+  } catch (firstError) {
+    console.warn("[chat] First AI parse/call failed, retrying once", firstError);
 
-  // Retry once with stricter prompt if JSON parse fails
-  if (!parsed && content) {
-    console.warn("[chat] JSON parse failed, retrying with strict prompt");
-    openRouterMessages.push({
-      role: "user",
-      content:
-        "Return ONLY the JSON object. No explanation. No markdown. No prose.",
-    });
-    content = await callAPI();
-    parsed = content ? tryParseJSON(content) : null;
+    const retryMessages = [
+      ...openRouterMessages,
+      {
+        role: "user",
+        content: "Return only a valid JSON object matching the required schema. No markdown.",
+      },
+    ];
+
+    const retryContent = await callOpenRouter(retryMessages);
+    return parseAIResponse(retryContent);
   }
-
-  if (!parsed) {
-    console.error("[chat] All attempts failed, returning fallback");
-    return FALLBACK_RESPONSE;
-  }
-
-  // Ensure required fields
-  return {
-    reply: parsed.reply || FALLBACK_RESPONSE.reply,
-    feedback: parsed.feedback || "",
-    scores: clampScores(parsed.scores || { clarity: 5, depth: 5, correctness: 5 }),
-    shouldAdvance: Boolean(parsed.shouldAdvance),
-    reason: parsed.reason || "",
-    followUp: parsed.followUp,
-  };
 }

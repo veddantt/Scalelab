@@ -70,7 +70,7 @@ function ProblemDetailPanel({ meta, onStart, onTryDemo }: { meta: ProblemMeta; o
   const Icon = iconMap[problem.id] ?? Link2;
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
+    <div className="flex flex-col h-full overflow-y-auto scrollbar-dark">
       {/* Header */}
       <div className="p-6 border-b border-gray-800/50">
         <div className="flex items-start justify-between gap-3 mb-3">
@@ -85,63 +85,70 @@ function ProblemDetailPanel({ meta, onStart, onTryDemo }: { meta: ProblemMeta; o
         <p className="text-gray-400 text-[13px] leading-relaxed">{problem.description}</p>
       </div>
 
-      {/* Architecture preview */}
-      <div className="px-6 py-4 border-b border-gray-800/50">
-        <p className="text-[10px] uppercase tracking-widest text-gray-600 font-bold mb-3">Architecture Preview</p>
-        <div className="bg-gray-900/60 rounded-xl border border-gray-800/40 px-3 overflow-hidden">
-          <MiniArchPreview nodes={archPreview.nodes} edges={archPreview.edges} compact />
+      {/* Two-column content: arch preview + requirements side-by-side on wider panels */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-0 border-b border-gray-800/50">
+        {/* Architecture preview */}
+        <div className="px-6 py-4 xl:border-r border-gray-800/50">
+          <p className="text-[10px] uppercase tracking-widest text-gray-600 font-bold mb-3">Architecture Preview</p>
+          <div className="bg-gray-900/60 rounded-xl border border-gray-800/40 px-3 overflow-hidden">
+            <MiniArchPreview nodes={archPreview.nodes} edges={archPreview.edges} compact />
+          </div>
+        </div>
+
+        {/* Requirements */}
+        <div className="px-6 py-4 border-t xl:border-t-0 border-gray-800/50">
+          <p className="text-[10px] uppercase tracking-widest text-gray-600 font-bold mb-3">Key Requirements</p>
+          <ul className="space-y-2">
+            {requirements.map((r) => (
+              <li key={r} className="flex items-start gap-2 text-[12px] text-gray-400">
+                <CheckCircle2 className="w-3.5 h-3.5 text-purple-500/70 shrink-0 mt-0.5" />
+                {r}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 
-      {/* Requirements */}
-      <div className="px-6 py-4 border-b border-gray-800/50">
-        <p className="text-[10px] uppercase tracking-widest text-gray-600 font-bold mb-3">Key Requirements</p>
-        <ul className="space-y-2">
-          {requirements.map((r) => (
-            <li key={r} className="flex items-start gap-2 text-[12px] text-gray-400">
-              <CheckCircle2 className="w-3.5 h-3.5 text-purple-500/70 shrink-0 mt-0.5" />
-              {r}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* What you'll practice */}
-      <div className="px-6 py-4 border-b border-gray-800/50">
-        <p className="text-[10px] uppercase tracking-widest text-gray-600 font-bold mb-3">What You&apos;ll Practice</p>
-        <div className="grid grid-cols-2 gap-2">
-          {practiceSkills.slice(0, 4).map((s, i) => {
-            const skillIcons = [Database, GitBranch, Scale, Workflow];
-            const SIcon = skillIcons[i % skillIcons.length];
-            return (
-              <div key={s} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-purple-500/5 border border-purple-500/15 group/skill hover:bg-purple-500/10 transition-all">
-                <SIcon className="w-3.5 h-3.5 text-purple-500/60 group-hover/skill:text-purple-400 transition-colors shrink-0" />
-                <span className="text-[11px] text-purple-300/80 font-medium truncate">{s}</span>
-              </div>
-            );
-          })}
+      {/* Two-column content: practice skills + tags side-by-side */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-0 border-b border-gray-800/50">
+        {/* What you'll practice */}
+        <div className="px-6 py-4 xl:border-r border-gray-800/50">
+          <p className="text-[10px] uppercase tracking-widest text-gray-600 font-bold mb-3">What You&apos;ll Practice</p>
+          <div className="grid grid-cols-2 gap-2">
+            {practiceSkills.slice(0, 4).map((s, i) => {
+              const skillIcons = [Database, GitBranch, Scale, Workflow];
+              const SIcon = skillIcons[i % skillIcons.length];
+              return (
+                <div key={s} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-purple-500/5 border border-purple-500/15 group/skill hover:bg-purple-500/10 transition-all">
+                  <SIcon className="w-3.5 h-3.5 text-purple-500/60 group-hover/skill:text-purple-400 transition-colors shrink-0" />
+                  <span className="text-[11px] text-purple-300/80 font-medium truncate">{s}</span>
+                </div>
+              );
+            })}
+          </div>
+          {practiceSkills.length > 4 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {practiceSkills.slice(4).map((s) => (
+                <span key={s} className="text-[10px] px-2 py-0.5 rounded-md bg-gray-800/40 text-gray-500 border border-gray-700/30">{s}</span>
+              ))}
+            </div>
+          )}
         </div>
-        {practiceSkills.length > 4 && (
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {practiceSkills.slice(4).map((s) => (
-              <span key={s} className="text-[10px] px-2 py-0.5 rounded-md bg-gray-800/40 text-gray-500 border border-gray-700/30">{s}</span>
+
+        {/* Tags + examples */}
+        <div className="px-6 py-4 border-t xl:border-t-0 border-gray-800/50">
+          <p className="text-[10px] uppercase tracking-widest text-gray-600 font-bold mb-3">Real-World Examples</p>
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {problem.tags.map((t) => (
+              <span key={t} className="text-[11px] px-2 py-0.5 rounded-md bg-gray-800/60 text-gray-500 border border-gray-700/40">
+                {t}
+              </span>
             ))}
           </div>
-        )}
-      </div>
-
-      {/* Tags + examples */}
-      <div className="px-6 py-4 border-b border-gray-800/50">
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {problem.tags.map((t) => (
-            <span key={t} className="text-[11px] px-2 py-0.5 rounded-md bg-gray-800/60 text-gray-500 border border-gray-700/40">
-              {t}
-            </span>
-          ))}
+          <p className="text-[11px] text-gray-600">
+            Real-world: <span className="text-gray-400">{problem.examples.join(" · ")}</span>
+          </p>
         </div>
-        <p className="text-[11px] text-gray-600">
-          Real-world: <span className="text-gray-400">{problem.examples.join(" · ")}</span>
-        </p>
       </div>
 
       {/* Meta + CTA */}
@@ -453,16 +460,16 @@ export default function ProblemsPage() {
               </button>
             </div>
           ) : (
-            <div className="flex flex-col lg:flex-row gap-4 h-auto lg:h-[620px]">
+            <div className="flex flex-col lg:flex-row gap-4 lg:min-h-[520px]">
               {/* ── Left: problem list ── */}
-              <div className="w-full lg:w-[280px] shrink-0 flex flex-col gap-1.5 overflow-y-auto pr-1 scrollbar-thin max-h-[300px] lg:max-h-full">
+              <div className="w-full lg:w-[280px] shrink-0 flex flex-col gap-2 lg:gap-1.5 lg:overflow-y-auto pr-1 scrollbar-dark lg:max-h-[620px]">
                 {filtered.map((meta) => {
                   const { problem } = meta;
                   const Icon = iconMap[problem.id] ?? Link2;
                   const isSelected = problem.id === selectedId;
                   return (
-                    <button
-                      key={problem.id}
+                    <div key={problem.id} className="flex flex-col">
+                      <button
                       onClick={() => setSelectedId(problem.id)}
                       className={`w-full text-left flex items-center gap-3 px-4 py-3.5 rounded-2xl border transition-all duration-200 group/item ${
                         isSelected
@@ -487,14 +494,37 @@ export default function ProblemsPage() {
                         </div>
                       </div>
 
-                      <ChevronRight className={`w-4 h-4 shrink-0 transition-all ${isSelected ? "text-purple-400" : "text-gray-700 group-hover/item:text-gray-500"}`} />
+                      <ChevronRight className={`hidden lg:block w-4 h-4 shrink-0 transition-all ${isSelected ? "text-purple-400" : "text-gray-700 group-hover/item:text-gray-500"}`} />
                     </button>
+                    
+                    {/* Mobile inline expansion */}
+                    <div className={`lg:hidden overflow-hidden transition-all duration-300 ${isSelected ? "mt-2 max-h-[800px] opacity-100" : "max-h-0 opacity-0"}`}>
+                      <div className="p-4 bg-gray-900/40 rounded-2xl border border-purple-500/20 backdrop-blur-sm">
+                        <p className="text-[12px] text-gray-400 leading-relaxed mb-3">{problem.description}</p>
+                        <div className="flex flex-wrap gap-1.5 mb-4">
+                          {problem.tags.map((t) => (
+                            <span key={t} className="text-[10px] px-2 py-0.5 rounded-md bg-gray-800/60 text-gray-500 border border-gray-700/40">
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => handleStartInterview(problem.id)} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold text-[12px] shadow-lg shadow-purple-500/20">
+                            Start Interview
+                          </button>
+                          <button onClick={() => handleTryDemo(problem.id)} className="px-3 py-2.5 rounded-xl bg-gray-800/50 border border-gray-700/50 text-gray-300 text-[12px] font-semibold">
+                            Demo
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   );
                 })}
               </div>
 
-              {/* ── Right: detail panel ── */}
-              <div className="w-full flex-1 min-h-[400px] lg:min-h-0 relative overflow-hidden rounded-2xl border border-gray-800/50 bg-[#080d1e]/60 backdrop-blur-xl transition-all duration-300" key={selectedMeta.problem.id}>
+              {/* ── Right: detail panel (Desktop Only) ── */}
+              <div className="hidden lg:flex w-full flex-1 relative rounded-2xl border border-gray-800/50 bg-[#080d1e]/60 backdrop-blur-xl transition-all duration-300 lg:max-h-[620px]" key={selectedMeta.problem.id}>
                 {/* Top glow */}
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
                 <ProblemDetailPanel

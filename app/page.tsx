@@ -202,7 +202,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#020617] text-white overflow-hidden">
       {/* ─── CENTERED HERO ─── */}
-      <section id="hero" className="relative max-w-[1400px] mx-auto px-6 md:px-10 pt-28 pb-16 flex flex-col items-center text-center">
+      <section id="hero" className="relative max-w-[1400px] mx-auto px-4 sm:px-6 md:px-10 pt-20 md:pt-28 pb-16 flex flex-col items-center text-center">
         {/* Glow backdrop */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden flex justify-center">
           <div className="absolute top-0 w-[800px] h-[500px] bg-purple-600/8 blur-[160px] rounded-full" />
@@ -215,7 +215,7 @@ export default function Home() {
             AI-Powered System Design
           </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[4rem] font-extrabold tracking-tight leading-[1.1] mb-6">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[4rem] font-extrabold tracking-tight leading-[1.2] lg:leading-[1.1] mb-5 lg:mb-6">
             Practice System Design
             <br />
             <span className="bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
@@ -223,7 +223,7 @@ export default function Home() {
             </span>
           </h1>
 
-          <p className="text-gray-400 text-[17px] leading-relaxed mb-10 max-w-2xl">
+          <p className="text-gray-400 text-[15px] lg:text-[17px] leading-relaxed mb-8 lg:mb-10 max-w-2xl px-2">
             Answer interview questions, get a real architecture diagram, see your bottlenecks, and receive a final score — all powered by AI in real time.
           </p>
 

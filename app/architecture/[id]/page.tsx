@@ -44,6 +44,7 @@ function ArchitectureInner() {
   const [regenerating, setRegenerating] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [rightTab, setRightTab] = useState<"overview" | "inspector">("overview");
+  const [sheetState, setSheetState] = useState<"peek" | "half" | "full">("peek");
 
   const loadFromSession = useCallback(() => {
     setLoading(true);
@@ -82,6 +83,7 @@ function ArchitectureInner() {
   const handleNodeClick = async (_: any, node: any) => {
     setSelectedNode(node);
     setRightTab("inspector");
+    setSheetState("full");
     setNodeExplanation(null);
     setExplanationLoading(true);
     const nodeLabel = node.data?.label;
@@ -204,6 +206,191 @@ function ArchitectureInner() {
 
   const scoreColor = (systemInsights?.score ?? 0) >= 80 ? "text-emerald-400" : (systemInsights?.score ?? 0) >= 60 ? "text-amber-400" : "text-red-400";
 
+  const renderSidebarContent = () => (
+    <>
+      {/* Tab bar */}
+      <div className="flex border-b border-gray-800/50 shrink-0">
+        {([
+          { id: "overview" as const, label: "System Overview", icon: BarChart3 },
+          { id: "inspector" as const, label: "Inspector", icon: Info },
+        ]).map((t) => {
+          const TIcon = t.icon;
+          return (
+            <button key={t.id} onClick={() => setRightTab(t.id)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-[11px] font-semibold transition-all border-b-2 ${
+                rightTab === t.id ? "text-white border-purple-500 bg-purple-500/5" : "text-gray-500 border-transparent hover:text-gray-300"
+              }`}>
+              <TIcon className="w-3.5 h-3.5" />{t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        {/* ─── OVERVIEW TAB ─── */}
+        {rightTab === "overview" && systemInsights ? (
+          <div className="p-5 space-y-5">
+            {/* Score ring */}
+            {systemInsights.score != null && (
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-gray-900/40 border border-gray-800/50">
+                <div className="relative w-16 h-16 shrink-0">
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 64 64">
+                    <circle cx="32" cy="32" r="26" fill="transparent" stroke="#1f2937" strokeWidth="5" />
+                    <circle cx="32" cy="32" r="26" fill="transparent" stroke="url(#archScoreGrad)" strokeWidth="5"
+                      strokeDasharray="163.4" strokeLinecap="round"
+                      strokeDashoffset={163.4 - (163.4 * (systemInsights.score || 0)) / 100}
+                      className="transition-all duration-1000" />
+                    <defs>
+                      <linearGradient id="archScoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#7c3aed" />
+                        <stop offset="100%" stopColor="#3b82f6" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className={`text-lg font-bold ${scoreColor}`}>{systemInsights.score}</span>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-white mb-1">Architecture Score</p>
+                  <p className="text-[10px] text-gray-500 leading-relaxed">
+                    {(systemInsights.score ?? 0) >= 80 ? "Strong design with solid component choices." : (systemInsights.score ?? 0) >= 60 ? "Good foundation — room for scaling improvements." : "Needs more depth in component selection and failure handling."}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Summary */}
+            {systemInsights.summary && (
+              <div>
+                <h3 className="text-[11px] uppercase tracking-[0.15em] text-gray-500 font-semibold mb-2">Summary</h3>
+                <p className="text-[13px] text-gray-300 leading-relaxed">{systemInsights.summary}</p>
+              </div>
+            )}
+
+            {/* Bottlenecks */}
+            {systemInsights.bottlenecks?.length > 0 && (
+              <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/10">
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertTriangle className="w-4 h-4 text-red-400" />
+                  <h3 className="text-red-400 font-semibold text-xs">Bottlenecks</h3>
+                </div>
+                <ul className="space-y-2">
+                  {systemInsights.bottlenecks.map((b: string, i: number) => (
+                    <li key={i} className="text-[12px] text-gray-400 pl-3 border-l-2 border-red-500/30 py-0.5 leading-relaxed">{b}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Tradeoffs */}
+            {systemInsights.tradeoffs?.length > 0 && (
+              <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10">
+                <div className="flex items-center gap-2 mb-3">
+                  <ArrowLeftRight className="w-4 h-4 text-blue-400" />
+                  <h3 className="text-blue-400 font-semibold text-xs">Tradeoffs</h3>
+                </div>
+                <ul className="space-y-2">
+                  {systemInsights.tradeoffs.map((t: string, i: number) => (
+                    <li key={i} className="text-[12px] text-gray-400 pl-3 border-l-2 border-blue-500/30 py-0.5 leading-relaxed">{t}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Scaling */}
+            {systemInsights.scalingRecommendations?.length > 0 && (
+              <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp className="w-4 h-4 text-emerald-400" />
+                  <h3 className="text-emerald-400 font-semibold text-xs">Scaling Recommendations</h3>
+                </div>
+                <ul className="space-y-2">
+                  {systemInsights.scalingRecommendations.map((r: string, i: number) => (
+                    <li key={i} className="text-[12px] text-gray-400 pl-3 border-l-2 border-emerald-500/30 py-0.5 leading-relaxed">{r}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <p className="text-gray-600 text-[10px] italic pt-2">Click any node to inspect its role and scaling behavior.</p>
+          </div>
+        ) : rightTab === "overview" ? (
+          <div className="h-full flex items-center justify-center p-6">
+            <p className="text-gray-600 text-sm text-center">No system analysis available yet.</p>
+          </div>
+        ) : null}
+
+        {/* ─── INSPECTOR TAB ─── */}
+        {rightTab === "inspector" && selectedNode ? (
+          <div className="p-5">
+            <div className="flex items-center gap-3 mb-4">
+              {(() => {
+                const cfg = nodeTypeConfig[selectedNode.data?.type as keyof typeof nodeTypeConfig] ?? nodeTypeConfig.service;
+                const NIcon = cfg.icon;
+                return (
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${cfg.bg} border ${cfg.border}`}>
+                    <NIcon className={`w-5 h-5 ${cfg.color}`} />
+                  </div>
+                );
+              })()}
+              <div>
+                <h2 className="text-lg font-bold">{selectedNode.data?.label}</h2>
+                {selectedNode.data?.type && (
+                  <span className={`text-[10px] font-semibold uppercase tracking-wider ${(nodeTypeConfig[selectedNode.data.type as keyof typeof nodeTypeConfig] ?? nodeTypeConfig.service).color} opacity-70`}>
+                    {selectedNode.data.type}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {selectedNode.data?.description && (
+              <p className="text-[12px] text-gray-400 mb-5 leading-relaxed p-3 rounded-xl bg-gray-900/40 border border-gray-800/50">{selectedNode.data.description}</p>
+            )}
+
+            {explanationLoading ? (
+              <div className="flex items-center gap-3 text-gray-500 text-sm py-8 justify-center">
+                <Loader2 className="w-4 h-4 animate-spin text-purple-500" />Analyzing component...
+              </div>
+            ) : nodeExplanation ? (
+              <div className="space-y-4">
+                {[
+                  { title: "Role", content: nodeExplanation.role, type: "text" },
+                  { title: "Responsibilities", content: nodeExplanation.responsibilities, type: "list" },
+                  { title: "Scaling Notes", content: nodeExplanation.scalingNotes, type: "list" },
+                  { title: "Failure Risks", content: nodeExplanation.failureRisks, type: "list" },
+                ].map((section) => (
+                  <div key={section.title} className="p-3 rounded-xl bg-gray-900/30 border border-gray-800/40">
+                    <h3 className="text-white font-semibold text-[11px] uppercase tracking-wider mb-2">{section.title}</h3>
+                    {section.type === "text" ? (
+                      <p className="text-[12px] text-gray-400 leading-relaxed">{section.content}</p>
+                    ) : (
+                      <ul className="space-y-1.5">
+                        {(section.content as string[])?.map((item: string, i: number) => (
+                          <li key={i} className="text-[12px] text-gray-400 flex items-start gap-2">
+                            <span className="text-purple-500 mt-1 shrink-0">•</span>{item}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : rightTab === "inspector" ? (
+          <div className="h-full flex flex-col items-center justify-center p-6 text-center">
+            <div className="w-12 h-12 rounded-xl bg-gray-800/50 border border-gray-700/50 flex items-center justify-center mb-3">
+              <Info className="w-5 h-5 text-gray-600" />
+            </div>
+            <p className="text-gray-500 text-sm font-medium mb-1">No Component Selected</p>
+            <p className="text-gray-600 text-xs">Click a node on the canvas to inspect it.</p>
+          </div>
+        ) : null}
+      </div>
+    </>
+  );
+
   return (
     <div className="h-screen flex flex-col bg-[#020617] text-white overflow-hidden">
       <Navbar />
@@ -312,189 +499,33 @@ function ArchitectureInner() {
           )}
         </div>
 
-        {/* ─── Right Panel ─── */}
-        <aside className="w-full lg:w-[380px] shrink-0 bg-[#020617] flex flex-col border-t lg:border-t-0 lg:border-l border-gray-800/50 overflow-hidden">
-          {/* Tab bar */}
-          <div className="flex border-b border-gray-800/50 shrink-0">
-            {([
-              { id: "overview" as const, label: "System Overview", icon: BarChart3 },
-              { id: "inspector" as const, label: "Inspector", icon: Info },
-            ]).map((t) => {
-              const TIcon = t.icon;
-              return (
-                <button key={t.id} onClick={() => setRightTab(t.id)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-[11px] font-semibold transition-all border-b-2 ${
-                    rightTab === t.id ? "text-white border-purple-500 bg-purple-500/5" : "text-gray-500 border-transparent hover:text-gray-300"
-                  }`}>
-                  <TIcon className="w-3.5 h-3.5" />{t.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex-1 overflow-y-auto">
-            {/* ─── OVERVIEW TAB ─── */}
-            {rightTab === "overview" && systemInsights ? (
-              <div className="p-5 space-y-5">
-                {/* Score ring */}
-                {systemInsights.score != null && (
-                  <div className="flex items-center gap-4 p-4 rounded-xl bg-gray-900/40 border border-gray-800/50">
-                    <div className="relative w-16 h-16 shrink-0">
-                      <svg className="w-full h-full -rotate-90" viewBox="0 0 64 64">
-                        <circle cx="32" cy="32" r="26" fill="transparent" stroke="#1f2937" strokeWidth="5" />
-                        <circle cx="32" cy="32" r="26" fill="transparent" stroke="url(#archScoreGrad)" strokeWidth="5"
-                          strokeDasharray="163.4" strokeLinecap="round"
-                          strokeDashoffset={163.4 - (163.4 * (systemInsights.score || 0)) / 100}
-                          className="transition-all duration-1000" />
-                        <defs>
-                          <linearGradient id="archScoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#7c3aed" />
-                            <stop offset="100%" stopColor="#3b82f6" />
-                          </linearGradient>
-                        </defs>
-                      </svg>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className={`text-lg font-bold ${scoreColor}`}>{systemInsights.score}</span>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-white mb-1">Architecture Score</p>
-                      <p className="text-[10px] text-gray-500 leading-relaxed">
-                        {(systemInsights.score ?? 0) >= 80 ? "Strong design with solid component choices." : (systemInsights.score ?? 0) >= 60 ? "Good foundation — room for scaling improvements." : "Needs more depth in component selection and failure handling."}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Summary */}
-                {systemInsights.summary && (
-                  <div>
-                    <h3 className="text-[11px] uppercase tracking-[0.15em] text-gray-500 font-semibold mb-2">Summary</h3>
-                    <p className="text-[13px] text-gray-300 leading-relaxed">{systemInsights.summary}</p>
-                  </div>
-                )}
-
-                {/* Bottlenecks */}
-                {systemInsights.bottlenecks?.length > 0 && (
-                  <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/10">
-                    <div className="flex items-center gap-2 mb-3">
-                      <AlertTriangle className="w-4 h-4 text-red-400" />
-                      <h3 className="text-red-400 font-semibold text-xs">Bottlenecks</h3>
-                    </div>
-                    <ul className="space-y-2">
-                      {systemInsights.bottlenecks.map((b: string, i: number) => (
-                        <li key={i} className="text-[12px] text-gray-400 pl-3 border-l-2 border-red-500/30 py-0.5 leading-relaxed">{b}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Tradeoffs */}
-                {systemInsights.tradeoffs?.length > 0 && (
-                  <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10">
-                    <div className="flex items-center gap-2 mb-3">
-                      <ArrowLeftRight className="w-4 h-4 text-blue-400" />
-                      <h3 className="text-blue-400 font-semibold text-xs">Tradeoffs</h3>
-                    </div>
-                    <ul className="space-y-2">
-                      {systemInsights.tradeoffs.map((t: string, i: number) => (
-                        <li key={i} className="text-[12px] text-gray-400 pl-3 border-l-2 border-blue-500/30 py-0.5 leading-relaxed">{t}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Scaling */}
-                {systemInsights.scalingRecommendations?.length > 0 && (
-                  <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                    <div className="flex items-center gap-2 mb-3">
-                      <TrendingUp className="w-4 h-4 text-emerald-400" />
-                      <h3 className="text-emerald-400 font-semibold text-xs">Scaling Recommendations</h3>
-                    </div>
-                    <ul className="space-y-2">
-                      {systemInsights.scalingRecommendations.map((r: string, i: number) => (
-                        <li key={i} className="text-[12px] text-gray-400 pl-3 border-l-2 border-emerald-500/30 py-0.5 leading-relaxed">{r}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                <p className="text-gray-600 text-[10px] italic pt-2">Click any node to inspect its role and scaling behavior.</p>
-              </div>
-            ) : rightTab === "overview" ? (
-              <div className="h-full flex items-center justify-center p-6">
-                <p className="text-gray-600 text-sm text-center">No system analysis available yet.</p>
-              </div>
-            ) : null}
-
-            {/* ─── INSPECTOR TAB ─── */}
-            {rightTab === "inspector" && selectedNode ? (
-              <div className="p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  {(() => {
-                    const cfg = nodeTypeConfig[selectedNode.data?.type as keyof typeof nodeTypeConfig] ?? nodeTypeConfig.service;
-                    const NIcon = cfg.icon;
-                    return (
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${cfg.bg} border ${cfg.border}`}>
-                        <NIcon className={`w-5 h-5 ${cfg.color}`} />
-                      </div>
-                    );
-                  })()}
-                  <div>
-                    <h2 className="text-lg font-bold">{selectedNode.data?.label}</h2>
-                    {selectedNode.data?.type && (
-                      <span className={`text-[10px] font-semibold uppercase tracking-wider ${(nodeTypeConfig[selectedNode.data.type as keyof typeof nodeTypeConfig] ?? nodeTypeConfig.service).color} opacity-70`}>
-                        {selectedNode.data.type}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {selectedNode.data?.description && (
-                  <p className="text-[12px] text-gray-400 mb-5 leading-relaxed p-3 rounded-xl bg-gray-900/40 border border-gray-800/50">{selectedNode.data.description}</p>
-                )}
-
-                {explanationLoading ? (
-                  <div className="flex items-center gap-3 text-gray-500 text-sm py-8 justify-center">
-                    <Loader2 className="w-4 h-4 animate-spin text-purple-500" />Analyzing component...
-                  </div>
-                ) : nodeExplanation ? (
-                  <div className="space-y-4">
-                    {[
-                      { title: "Role", content: nodeExplanation.role, type: "text" },
-                      { title: "Responsibilities", content: nodeExplanation.responsibilities, type: "list" },
-                      { title: "Scaling Notes", content: nodeExplanation.scalingNotes, type: "list" },
-                      { title: "Failure Risks", content: nodeExplanation.failureRisks, type: "list" },
-                    ].map((section) => (
-                      <div key={section.title} className="p-3 rounded-xl bg-gray-900/30 border border-gray-800/40">
-                        <h3 className="text-white font-semibold text-[11px] uppercase tracking-wider mb-2">{section.title}</h3>
-                        {section.type === "text" ? (
-                          <p className="text-[12px] text-gray-400 leading-relaxed">{section.content}</p>
-                        ) : (
-                          <ul className="space-y-1.5">
-                            {(section.content as string[])?.map((item: string, i: number) => (
-                              <li key={i} className="text-[12px] text-gray-400 flex items-start gap-2">
-                                <span className="text-purple-500 mt-1 shrink-0">•</span>{item}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            ) : rightTab === "inspector" ? (
-              <div className="h-full flex flex-col items-center justify-center p-6 text-center">
-                <div className="w-12 h-12 rounded-xl bg-gray-800/50 border border-gray-700/50 flex items-center justify-center mb-3">
-                  <Info className="w-5 h-5 text-gray-600" />
-                </div>
-                <p className="text-gray-500 text-sm font-medium mb-1">No Component Selected</p>
-                <p className="text-gray-600 text-xs">Click a node on the canvas to inspect it.</p>
-              </div>
-            ) : null}
-          </div>
+        {/* ─── Desktop Right Panel ─── */}
+        <aside className="hidden lg:flex w-[380px] shrink-0 bg-[#020617] flex-col border-l border-gray-800/50 overflow-hidden">
+          {renderSidebarContent()}
         </aside>
+
+        {/* ─── Mobile Bottom Sheet ─── */}
+        <div className={`lg:hidden fixed bottom-0 left-0 right-0 rounded-t-2xl bg-[#020617]/90 backdrop-blur-xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-50 border-t border-gray-800/50 transition-all duration-300 flex flex-col ${
+          sheetState === "peek" ? "h-[60px]" : sheetState === "half" ? "h-[40vh]" : "h-[80vh]"
+        }`}>
+          {/* Drag Handle */}
+          <div 
+            className="w-full flex justify-center py-3 shrink-0 cursor-pointer" 
+            onClick={() => setSheetState(s => s === "peek" ? "half" : s === "half" ? "full" : "peek")}
+          >
+            <div className="w-12 h-1.5 bg-gray-600 rounded-full" />
+          </div>
+          
+          {sheetState === "peek" ? (
+            <div className="px-5 text-center text-gray-400 font-semibold text-sm cursor-pointer" onClick={() => setSheetState("half")}>
+              System Analysis
+            </div>
+          ) : (
+            <div className="flex-1 overflow-hidden flex flex-col">
+              {renderSidebarContent()}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
