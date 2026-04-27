@@ -226,7 +226,7 @@ export default function InterviewPage() {
     <div className="flex h-[calc(100vh-58px)] bg-[#070B14] text-[#E2E8F0] overflow-hidden">
       
       {/* ── LEFT: Interview Timeline (Steps) ── */}
-      <aside className="w-[300px] border-r border-[#1E293B] bg-[#070B14] flex flex-col shrink-0">
+      <aside className="hidden lg:flex w-[300px] border-r border-[#1E293B] bg-[#070B14] flex-col shrink-0">
         <div className="p-6 border-b border-[#1E293B] shrink-0">
           <div className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest mb-1.5">Interview Session</div>
           <h1 className="text-lg font-bold text-white truncate">{problem}</h1>
@@ -361,7 +361,7 @@ export default function InterviewPage() {
       </section>
 
       {/* ── RIGHT: Tabs (Score & Architecture) ── */}
-      <aside className="w-[320px] border-l border-[#1E293B] bg-[#070B14] flex flex-col shrink-0 h-full min-h-0 overflow-hidden">
+      <aside className="hidden lg:flex w-[320px] border-l border-[#1E293B] bg-[#070B14] flex-col shrink-0 h-full min-h-0 overflow-hidden">
         <div className="flex border-b border-[#1E293B] shrink-0">
            {[
              { id: "score", icon: BarChart3 },

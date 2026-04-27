@@ -91,7 +91,7 @@ export default function ProblemsPage() {
     <div className="flex h-[calc(100vh-58px)] bg-[#070B14] text-[#E2E8F0] overflow-hidden">
       
       {/* ── LEFT: Challenge Explorer ── */}
-      <aside className="w-[320px] border-r border-[#1E293B] bg-[#070B14] flex flex-col shrink-0">
+      <aside className="hidden lg:flex w-[320px] border-r border-[#1E293B] bg-[#070B14] flex-col shrink-0">
         <div className="p-5 border-b border-[#1E293B] space-y-4 shrink-0">
           <div className="flex items-center justify-between bg-[#0F172A] border border-[#1E293B] rounded-xl px-4 py-2">
             <span className={`text-[12px] font-bold transition-colors ${!isPracticeMode ? "text-white" : "text-[#94A3B8]"}`}>Interview</span>
@@ -118,7 +118,7 @@ export default function ProblemsPage() {
             {["All", "Beginner", "Intermediate", "Advanced"].map((d) => (
               <button
                 key={d}
-                onClick={() => setFilter(d as any)}
+                onClick={() => setFilter(d as "All" | "Beginner" | "Intermediate" | "Advanced")}
                 className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all ${
                   filter === d ? "bg-[#6366F1]/10 border-[#6366F1]/30 text-[#6366F1]" : "bg-transparent border-[#1E293B] text-[#94A3B8] hover:border-[#94A3B8]/30"
                 }`}
@@ -214,7 +214,7 @@ export default function ProblemsPage() {
       </section>
 
       {/* ── RIGHT: Metadata ── */}
-      <aside className="w-[320px] bg-[#070B14] shrink-0 h-full min-h-0 overflow-hidden">
+      <aside className="hidden lg:block w-[320px] bg-[#070B14] shrink-0 h-full min-h-0 overflow-hidden">
          <div className="h-full min-h-0 overflow-y-auto p-6 pb-12 custom-scrollbar space-y-8">
             <div className="space-y-6">
                <h3 className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-widest mb-4 border-b border-[#1E293B] pb-2">System Profile</h3>

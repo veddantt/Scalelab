@@ -30,10 +30,10 @@ export default function Navbar() {
           </Link>
 
           {/* Right */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 sm:gap-6">
             <Link
               href="/problems"
-              className="text-[11px] font-bold uppercase tracking-widest text-[#94A3B8] hover:text-white transition-colors"
+              className="hidden sm:inline-block text-[11px] font-bold uppercase tracking-widest text-[#94A3B8] hover:text-white transition-colors"
             >
               Problems
             </Link>
@@ -96,7 +96,7 @@ export default function Navbar() {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => openAuth("signin")}
-                    className="text-[11px] font-bold uppercase tracking-widest text-[#94A3B8] hover:text-white transition-colors px-3 py-1.5"
+                    className="hidden sm:inline-block text-[11px] font-bold uppercase tracking-widest text-[#94A3B8] hover:text-white transition-colors px-3 py-1.5"
                   >
                     Sign In
                   </button>
