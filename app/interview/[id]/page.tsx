@@ -467,11 +467,11 @@ export default function InterviewPage() {
                <div className="space-y-3">
                   <h4 className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-widest mb-3">System Profile</h4>
                   {[
-                    { icon: Users, label: "Users", val: meta.systemProfile.users },
-                    { icon: Zap, label: "QPS", val: meta.systemProfile.qps },
+                    { icon: Users, label: "Users", val: meta.systemProfile.scale },
+                    { icon: Zap, label: "QPS", val: meta.systemProfile.throughput },
                     { icon: Globe, label: "Latency", val: meta.systemProfile.latency },
                     { icon: Database, label: "Storage", val: meta.systemProfile.storage },
-                    { icon: Cpu, label: "Type", val: meta.systemProfile.type }
+                    { icon: Cpu, label: "Type", val: meta.systemProfile.systemType }
                   ].map((stat) => (
                     <div key={stat.label} className="p-3.5 rounded-xl bg-[#0F172A] border border-[#1E293B]">
                        <div className="flex items-center gap-2 mb-1">
@@ -483,15 +483,28 @@ export default function InterviewPage() {
                   ))}
                </div>
 
-               <div className="p-5 rounded-2xl bg-[#0F172A] border-l-2 border-l-[#6366F1] border border-[#1E293B]">
-                  <div className="flex items-center gap-2 mb-3">
-                     <Activity className="w-4 h-4 text-[#94A3B8]" />
-                     <span className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest">Interview Mode</span>
-                  </div>
-                  <p className="text-[11px] text-[#94A3B8] leading-relaxed italic">
-                    "{meta.systemProfile.interviewGuidance || 'Focus on scaling bottlenecks, data models, and component tradeoffs.'}"
-                  </p>
-               </div>
+               {meta.systemProfile.recommendedStack && meta.systemProfile.recommendedStack.length > 0 && (
+                 <div className="space-y-3">
+                    <h4 className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-widest mb-3">Recommended Stack</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {meta.systemProfile.recommendedStack.map(stack => (
+                        <span key={stack} className="px-3 py-1.5 rounded-lg bg-[#0F172A] border border-[#1E293B] text-[11px] text-[#E2E8F0] font-bold shadow-sm">{stack}</span>
+                      ))}
+                    </div>
+                 </div>
+               )}
+
+               {meta.systemProfile.interviewGuidance && (
+                 <div className="p-5 rounded-2xl bg-[#0F172A] border-l-2 border-l-[#6366F1] border border-[#1E293B]">
+                    <div className="flex items-center gap-2 mb-3">
+                       <Activity className="w-4 h-4 text-[#94A3B8]" />
+                       <span className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest">Interview Mode</span>
+                    </div>
+                    <p className="text-[11px] text-[#94A3B8] leading-relaxed italic">
+                      "{meta.systemProfile.interviewGuidance}"
+                    </p>
+                 </div>
+               )}
             </div>
           )}
         </div>

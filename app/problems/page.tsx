@@ -221,11 +221,11 @@ export default function ProblemsPage() {
                
                <div className="space-y-3">
                  {[
-                   { icon: Users, label: "Scale", val: selectedMeta.systemProfile.users },
-                   { icon: Zap, label: "Throughput", val: selectedMeta.systemProfile.qps },
+                   { icon: Users, label: "Scale", val: selectedMeta.systemProfile.scale },
+                   { icon: Zap, label: "Throughput", val: selectedMeta.systemProfile.throughput },
                    { icon: Globe, label: "Latency", val: selectedMeta.systemProfile.latency },
                    { icon: Database, label: "Storage", val: selectedMeta.systemProfile.storage },
-                   { icon: Cpu, label: "System Type", val: selectedMeta.systemProfile.type }
+                   { icon: Cpu, label: "System Type", val: selectedMeta.systemProfile.systemType }
                  ].map((stat) => (
                    <div key={stat.label} className="p-4 rounded-xl bg-[#0F172A] border border-[#1E293B]">
                       <div className="flex items-center gap-2 mb-1.5">
@@ -238,26 +238,30 @@ export default function ProblemsPage() {
                </div>
             </div>
 
-            <div className="space-y-4">
-               <h3 className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-widest mb-4 border-b border-[#1E293B] pb-2">Recommended Stack</h3>
-               <div className="flex flex-wrap gap-2">
-                  {["Redis", "Kafka", "PostgreSQL", "Cassandra", "gRPC"].map(tag => (
-                    <span key={tag} className="px-3 py-1.5 rounded-lg bg-[#0F172A] border border-[#1E293B] text-[11px] text-[#E2E8F0] font-bold hover:border-[#6366F1]/40 transition-colors cursor-default">
-                      {tag}
-                    </span>
-                  ))}
-               </div>
-            </div>
+            {selectedMeta.systemProfile.recommendedStack && selectedMeta.systemProfile.recommendedStack.length > 0 && (
+              <div className="space-y-4">
+                 <h3 className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-widest mb-4 border-b border-[#1E293B] pb-2">Recommended Stack</h3>
+                 <div className="flex flex-wrap gap-2">
+                    {selectedMeta.systemProfile.recommendedStack.map(tag => (
+                      <span key={tag} className="px-3 py-1.5 rounded-lg bg-[#0F172A] border border-[#1E293B] text-[11px] text-[#E2E8F0] font-bold hover:border-[#6366F1]/40 transition-colors cursor-default">
+                        {tag}
+                      </span>
+                    ))}
+                 </div>
+              </div>
+            )}
 
-            <div className="p-5 rounded-2xl bg-[#0F172A] border-l-2 border-l-[#6366F1] border border-[#1E293B]">
-               <div className="flex items-center gap-2 mb-3">
-                  <Settings2 className="w-4 h-4 text-[#94A3B8]" />
-                  <span className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest">Interview Mode</span>
-               </div>
-               <p className="text-[11px] text-[#94A3B8] leading-relaxed italic">
-                 "Senior level evaluation. Focus on data consistency and partitioning."
-               </p>
-            </div>
+            {selectedMeta.systemProfile.interviewGuidance && (
+              <div className="p-5 rounded-2xl bg-[#0F172A] border-l-2 border-l-[#6366F1] border border-[#1E293B]">
+                 <div className="flex items-center gap-2 mb-3">
+                    <Settings2 className="w-4 h-4 text-[#94A3B8]" />
+                    <span className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest">Interview Mode</span>
+                 </div>
+                 <p className="text-[11px] text-[#94A3B8] leading-relaxed italic">
+                   "{selectedMeta.systemProfile.interviewGuidance}"
+                 </p>
+              </div>
+            )}
          </div>
       </aside>
 

@@ -7,7 +7,7 @@ import type { Problem } from "@/lib/types";
 export interface ArchPreviewNode {
   id: string;
   label: string;
-  type: "client" | "gateway" | "service" | "cache" | "db" | "queue" | "worker" | "external";
+  systemType: "client" | "gateway" | "service" | "cache" | "db" | "queue" | "worker" | "external";
 }
 
 export interface ArchPreviewEdge {
@@ -16,11 +16,12 @@ export interface ArchPreviewEdge {
 }
 
 export interface SystemProfile {
-  users: string;
-  qps: string;
+  scale: string;
+  throughput: string;
   latency: string;
   storage: string;
-  type: "Read-heavy" | "Write-heavy" | "Real-time" | "Distributed infra";
+  systemType: string;
+  recommendedStack: string[];
   interviewGuidance: string;
 }
 
@@ -56,21 +57,22 @@ export const problemMeta: ProblemMeta[] = [
     ],
     practiceSkills: ["Consistent hashing", "Redis caching", "CDN edge", "Base62 encoding", "Write-heavy vs read-heavy tradeoffs"],
     systemProfile: {
-      users: "100M+ Monthly",
-      qps: "1M Read / 10k Write",
+      scale: "100M+ Monthly",
+      throughput: "1M Read / 10k Write",
       latency: "< 10ms (Redirect)",
       storage: "500TB (Archive)",
-      type: "Read-heavy",
-      interviewGuidance: "Focus on read-heavy traffic, low-latency redirects, caching, and collision handling.",
+      systemType: "Read-heavy",
+      recommendedStack: ["CDN", "Redis", "PostgreSQL", "Base62"],
+      interviewGuidance: "Focus on read-heavy redirects, caching, collision handling, and analytics tradeoffs.",
     },
     archPreview: {
       nodes: [
-        { id: "c", label: "Client", type: "client" },
-        { id: "cdn", label: "CDN", type: "external" },
-        { id: "api", label: "API Gateway", type: "gateway" },
-        { id: "svc", label: "URL Service", type: "service" },
-        { id: "cache", label: "Redis", type: "cache" },
-        { id: "db", label: "PostgreSQL", type: "db" },
+        { id: "c", label: "Client", systemType: "client" },
+        { id: "cdn", label: "CDN", systemType: "external" },
+        { id: "api", label: "API Gateway", systemType: "gateway" },
+        { id: "svc", label: "URL Service", systemType: "service" },
+        { id: "cache", label: "Redis", systemType: "cache" },
+        { id: "db", label: "PostgreSQL", systemType: "db" },
       ],
       edges: [
         { from: "c", to: "cdn" },
@@ -101,21 +103,22 @@ export const problemMeta: ProblemMeta[] = [
     ],
     practiceSkills: ["WebSocket connection management", "Pub/Sub fanout", "Message ordering", "Horizontal scaling", "Eventual consistency"],
     systemProfile: {
-      users: "50M DAU",
-      qps: "500k Concurrent",
+      scale: "50M DAU",
+      throughput: "500k Concurrent",
       latency: "< 50ms (E2E)",
       storage: "2PB (History)",
-      type: "Real-time",
-      interviewGuidance: "Focus on real-time delivery, WebSockets, ordering, fanout, and presence.",
+      systemType: "Real-time",
+      recommendedStack: ["WebSockets", "Kafka", "Redis", "Cassandra"],
+      interviewGuidance: "Focus on real-time delivery, ordering, fanout, presence, and message persistence.",
     },
     archPreview: {
       nodes: [
-        { id: "c", label: "Client", type: "client" },
-        { id: "ws", label: "WS Gateway", type: "gateway" },
-        { id: "chat", label: "Chat Service", type: "service" },
-        { id: "q", label: "Kafka", type: "queue" },
-        { id: "w", label: "Fan-out Worker", type: "worker" },
-        { id: "db", label: "Cassandra", type: "db" },
+        { id: "c", label: "Client", systemType: "client" },
+        { id: "ws", label: "WS Gateway", systemType: "gateway" },
+        { id: "chat", label: "Chat Service", systemType: "service" },
+        { id: "q", label: "Kafka", systemType: "queue" },
+        { id: "w", label: "Fan-out Worker", systemType: "worker" },
+        { id: "db", label: "Cassandra", systemType: "db" },
       ],
       edges: [
         { from: "c", to: "ws" },
@@ -146,21 +149,22 @@ export const problemMeta: ProblemMeta[] = [
     ],
     practiceSkills: ["Geospatial indexing", "Event-driven architecture", "Saga pattern", "Payment idempotency", "Location streaming"],
     systemProfile: {
-      users: "10M Active",
-      qps: "5k Orders/min",
+      scale: "10M Active",
+      throughput: "5k Orders/min",
       latency: "< 200ms (Search)",
       storage: "100TB (Geo-logs)",
-      type: "Distributed infra",
-      interviewGuidance: "Focus on geo-matching, real-time location updates, consistency, and dispatch latency.",
+      systemType: "Distributed infra",
+      recommendedStack: ["PostgreSQL", "Redis", "Kafka", "Maps API", "WebSockets"],
+      interviewGuidance: "Focus on geo-matching, live location updates, dispatch latency, and payment consistency.",
     },
     archPreview: {
       nodes: [
-        { id: "c", label: "Client", type: "client" },
-        { id: "api", label: "API Gateway", type: "gateway" },
-        { id: "ord", label: "Order Service", type: "service" },
-        { id: "loc", label: "Location Service", type: "service" },
-        { id: "q", label: "Event Bus", type: "queue" },
-        { id: "db", label: "PostgreSQL", type: "db" },
+        { id: "c", label: "Client", systemType: "client" },
+        { id: "api", label: "API Gateway", systemType: "gateway" },
+        { id: "ord", label: "Order Service", systemType: "service" },
+        { id: "loc", label: "Location Service", systemType: "service" },
+        { id: "q", label: "Event Bus", systemType: "queue" },
+        { id: "db", label: "PostgreSQL", systemType: "db" },
       ],
       edges: [
         { from: "c", to: "api" },
@@ -191,20 +195,21 @@ export const problemMeta: ProblemMeta[] = [
     ],
     practiceSkills: ["Token bucket vs sliding window", "Redis atomic operations", "Distributed coordination", "Edge caching", "Failure modes"],
     systemProfile: {
-      users: "1B+ Global Requests",
-      qps: "10M+ RPS",
+      scale: "1B+ Global Requests",
+      throughput: "10M+ RPS",
       latency: "< 1ms (Decision)",
       storage: "10TB (Counters)",
-      type: "Read-heavy",
+      systemType: "Read-heavy",
+      recommendedStack: ["Redis", "Lua Scripts", "Token Bucket", "gRPC"],
       interviewGuidance: "Focus on ultra-low latency, distributed counters, consistency, and abuse prevention.",
     },
     archPreview: {
       nodes: [
-        { id: "c", label: "Client", type: "client" },
-        { id: "edge", label: "Edge Node", type: "gateway" },
-        { id: "rl", label: "Rate Limiter", type: "service" },
-        { id: "redis", label: "Redis Cluster", type: "cache" },
-        { id: "api", label: "Upstream API", type: "external" },
+        { id: "c", label: "Client", systemType: "client" },
+        { id: "edge", label: "Edge Node", systemType: "gateway" },
+        { id: "rl", label: "Rate Limiter", systemType: "service" },
+        { id: "redis", label: "Redis Cluster", systemType: "cache" },
+        { id: "api", label: "Upstream API", systemType: "external" },
       ],
       edges: [
         { from: "c", to: "edge" },
@@ -227,28 +232,29 @@ export const problemMeta: ProblemMeta[] = [
     },
     requirements: [
       "Upload files up to 5GB with chunked multipart upload",
-      "Delta sync — only transfer changed blocks",
+      "Delta sync \u2014 only transfer changed blocks",
       "File versioning with rollback support",
       "Shared folder permissions with ACL",
       "Full-text search across file metadata",
     ],
     practiceSkills: ["Chunked upload", "Content-addressable storage", "Delta sync", "Object storage (S3)", "Metadata indexing"],
     systemProfile: {
-      users: "200M Users",
-      qps: "1k Uploads/sec",
+      scale: "200M Users",
+      throughput: "1k Uploads/sec",
       latency: "N/A (Throughput focus)",
       storage: "100EB (Exabytes)",
-      type: "Write-heavy",
-      interviewGuidance: "Focus on chunked uploads, deduplication, object storage, and metadata indexing.",
+      systemType: "Write-heavy",
+      recommendedStack: ["Object Storage", "CDN", "PostgreSQL", "Chunking"],
+      interviewGuidance: "Focus on uploads, metadata, replication, access control, and large file retrieval.",
     },
     archPreview: {
       nodes: [
-        { id: "c", label: "Client", type: "client" },
-        { id: "api", label: "Upload API", type: "gateway" },
-        { id: "chunk", label: "Chunk Service", type: "service" },
-        { id: "s3", label: "Object Store", type: "external" },
-        { id: "meta", label: "Metadata DB", type: "db" },
-        { id: "idx", label: "Search Index", type: "cache" },
+        { id: "c", label: "Client", systemType: "client" },
+        { id: "api", label: "Upload API", systemType: "gateway" },
+        { id: "chunk", label: "Chunk Service", systemType: "service" },
+        { id: "s3", label: "Object Store", systemType: "external" },
+        { id: "meta", label: "Metadata DB", systemType: "db" },
+        { id: "idx", label: "Search Index", systemType: "cache" },
       ],
       edges: [
         { from: "c", to: "api" },
@@ -279,21 +285,22 @@ export const problemMeta: ProblemMeta[] = [
     ],
     practiceSkills: ["Priority queues", "Fan-out patterns", "Retry with backoff", "Multi-channel delivery", "User preference systems"],
     systemProfile: {
-      users: "500M Users",
-      qps: "100k Messages/sec",
+      scale: "500M Users",
+      throughput: "100k Messages/sec",
       latency: "< 1s (Critical)",
       storage: "200TB (Logs)",
-      type: "Distributed infra",
-      interviewGuidance: "Focus on priority queues, rate limiting, retries, and multi-channel delivery.",
+      systemType: "Distributed infra",
+      recommendedStack: ["Kafka", "Redis", "PostgreSQL", "FCM/APNs"],
+      interviewGuidance: "Focus on fanout, delivery guarantees, retries, user preferences, and rate limits.",
     },
     archPreview: {
       nodes: [
-        { id: "svc", label: "Event Source", type: "service" },
-        { id: "q", label: "Priority Queue", type: "queue" },
-        { id: "fan", label: "Fan-out Service", type: "service" },
-        { id: "push", label: "Push Worker", type: "worker" },
-        { id: "email", label: "Email Worker", type: "worker" },
-        { id: "db", label: "User Prefs DB", type: "db" },
+        { id: "svc", label: "Event Source", systemType: "service" },
+        { id: "q", label: "Priority Queue", systemType: "queue" },
+        { id: "fan", label: "Fan-out Service", systemType: "service" },
+        { id: "push", label: "Push Worker", systemType: "worker" },
+        { id: "email", label: "Email Worker", systemType: "worker" },
+        { id: "db", label: "User Prefs DB", systemType: "db" },
       ],
       edges: [
         { from: "svc", to: "q" },
@@ -304,7 +311,7 @@ export const problemMeta: ProblemMeta[] = [
       ],
     },
   },
-  // ─── Advanced Challenges ────────────────────────────────────────────────────
+  // \u2500\u2500\u2500 Advanced Challenges \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   {
     problem: {
       id: "search-autocomplete",
@@ -325,23 +332,24 @@ export const problemMeta: ProblemMeta[] = [
     ],
     practiceSkills: ["Trie / prefix indexing", "Low-latency API design", "Ranking strategies", "Hot key handling", "Analytics pipeline"],
     systemProfile: {
-      users: "2B Global Users",
-      qps: "1M+ RPS",
+      scale: "2B Global Users",
+      throughput: "1M+ RPS",
       latency: "< 20ms (Typing)",
       storage: "1PB (Trie Data)",
-      type: "Real-time",
-      interviewGuidance: "Focus on low latency, prefix trees (Trie), top-K ranking, and caching.",
+      systemType: "Real-time",
+      recommendedStack: ["Trie", "Redis", "Elasticsearch", "Kafka"],
+      interviewGuidance: "Focus on low-latency suggestions, ranking, prefix indexing, and freshness.",
     },
     archPreview: {
       nodes: [
-        { id: "c", label: "Client", type: "client" },
-        { id: "api", label: "API Gateway", type: "gateway" },
-        { id: "auto", label: "Autocomplete Svc", type: "service" },
-        { id: "redis", label: "Redis Cache", type: "cache" },
-        { id: "trie", label: "Trie / Prefix Index", type: "db" },
-        { id: "rank", label: "Ranking Service", type: "service" },
-        { id: "log", label: "Query Log Pipeline", type: "queue" },
-        { id: "store", label: "Search Index Store", type: "db" },
+        { id: "c", label: "Client", systemType: "client" },
+        { id: "api", label: "API Gateway", systemType: "gateway" },
+        { id: "auto", label: "Autocomplete Svc", systemType: "service" },
+        { id: "redis", label: "Redis Cache", systemType: "cache" },
+        { id: "trie", label: "Trie / Prefix Index", systemType: "db" },
+        { id: "rank", label: "Ranking Service", systemType: "service" },
+        { id: "log", label: "Query Log Pipeline", systemType: "queue" },
+        { id: "store", label: "Search Index Store", systemType: "db" },
       ],
       edges: [
         { from: "c", to: "api" },
@@ -375,23 +383,24 @@ export const problemMeta: ProblemMeta[] = [
     ],
     practiceSkills: ["Cron scheduling model", "Worker coordination", "Distributed locking", "Retry & dead-letter queues", "Idempotency"],
     systemProfile: {
-      users: "100k Developers",
-      qps: "50k Jobs/min",
+      scale: "100k Developers",
+      throughput: "50k Jobs/min",
       latency: "< 100ms (Trigger)",
       storage: "50TB (History)",
-      type: "Distributed infra",
-      interviewGuidance: "Focus on worker coordination, retries, idempotency, and fault tolerance.",
+      systemType: "Distributed infra",
+      recommendedStack: ["Kafka", "Worker Queues", "PostgreSQL", "Redis"],
+      interviewGuidance: "Focus on retries, idempotency, worker coordination, leases, and fault tolerance.",
     },
     archPreview: {
       nodes: [
-        { id: "c", label: "Admin Dashboard", type: "client" },
-        { id: "api", label: "API Gateway", type: "gateway" },
-        { id: "sched", label: "Scheduler Service", type: "service" },
-        { id: "lock", label: "Leader Election", type: "service" },
-        { id: "db", label: "Job Metadata DB", type: "db" },
-        { id: "q", label: "Job Queue", type: "queue" },
-        { id: "w", label: "Worker Pool", type: "worker" },
-        { id: "dlq", label: "Dead Letter Queue", type: "queue" },
+        { id: "c", label: "Admin Dashboard", systemType: "client" },
+        { id: "api", label: "API Gateway", systemType: "gateway" },
+        { id: "sched", label: "Scheduler Service", systemType: "service" },
+        { id: "lock", label: "Leader Election", systemType: "service" },
+        { id: "db", label: "Job Metadata DB", systemType: "db" },
+        { id: "q", label: "Job Queue", systemType: "queue" },
+        { id: "w", label: "Worker Pool", systemType: "worker" },
+        { id: "dlq", label: "Dead Letter Queue", systemType: "queue" },
       ],
       edges: [
         { from: "c", to: "api" },
@@ -418,30 +427,31 @@ export const problemMeta: ProblemMeta[] = [
     },
     requirements: [
       "Support large video uploads via chunked multipart upload",
-      "Transcode videos into multiple qualities (360p–4K)",
+      "Transcode videos into multiple qualities (360p\u20134K)",
       "Deliver video globally via CDN with adaptive bitrate",
       "Track views, likes, comments, and engagement analytics",
       "Handle viral traffic spikes without quality degradation",
     ],
     practiceSkills: ["Object storage design", "Transcoding pipeline", "CDN strategy", "Adaptive bitrate streaming", "Analytics at scale"],
     systemProfile: {
-      users: "2B+ Users",
-      qps: "5M Concurrent",
+      scale: "2B+ Users",
+      throughput: "5M Concurrent",
       latency: "< 2s (Start)",
       storage: "1000PB (Videos)",
-      type: "Read-heavy",
-      interviewGuidance: "Focus on chunked streaming, CDN delivery, adaptive bitrate, and transcoding pipelines.",
+      systemType: "Read-heavy",
+      recommendedStack: ["CDN", "Object Storage", "Kafka", "Transcoding Workers"],
+      interviewGuidance: "Focus on video ingestion, transcoding, CDN delivery, buffering, and playback latency.",
     },
     archPreview: {
       nodes: [
-        { id: "c", label: "Web / Mobile Client", type: "client" },
-        { id: "api", label: "API Gateway", type: "gateway" },
-        { id: "upload", label: "Upload Service", type: "service" },
-        { id: "s3", label: "Object Storage", type: "external" },
-        { id: "q", label: "Message Queue", type: "queue" },
-        { id: "tc", label: "Transcoding Workers", type: "worker" },
-        { id: "meta", label: "Metadata Service", type: "service" },
-        { id: "cdn", label: "CDN", type: "external" },
+        { id: "c", label: "Web / Mobile Client", systemType: "client" },
+        { id: "api", label: "API Gateway", systemType: "gateway" },
+        { id: "upload", label: "Upload Service", systemType: "service" },
+        { id: "s3", label: "Object Storage", systemType: "external" },
+        { id: "q", label: "Message Queue", systemType: "queue" },
+        { id: "tc", label: "Transcoding Workers", systemType: "worker" },
+        { id: "meta", label: "Metadata Service", systemType: "service" },
+        { id: "cdn", label: "CDN", systemType: "external" },
       ],
       edges: [
         { from: "c", to: "api" },
