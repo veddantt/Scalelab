@@ -1,36 +1,124 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ScaleLab
 
-## Getting Started
+**AI-powered system design interview simulator.**
 
-First, run the development server:
+ScaleLab puts you through a structured, pressure-tested system design interview — one question at a time — and evaluates your answers in real time. Built for engineers who understand system design concepts but struggle to communicate them clearly under interview conditions.
+
+→ **Live:** [scalelab-ai.vercel.app](https://scalelab-ai.vercel.app)
+
+---
+
+## The Problem
+
+Knowing system design and performing it in an interview are two different skills. Most engineers fail not because they lack knowledge, but because they can't structure and communicate their thinking clearly under pressure. Existing tools (courses, mock docs, YouTube) don't simulate that pressure — they teach, they don't test.
+
+---
+
+## What ScaleLab Does
+
+ScaleLab acts as a strict AI interviewer — not a tutor. It asks one concise question at a time (max 12 words), gives no hints, and adapts its follow-up questions based on the quality of your response. After each answer, it scores you on clarity, depth, and correctness, then decides whether to push forward or probe deeper.
+
+---
+
+## Interview Flow
+
+Each session walks through the standard system design structure:
+
+1. Functional Requirements
+2. Scale Estimation
+3. API Design
+4. Database Design
+5. High-Level Architecture
+6. Bottleneck Identification
+7. Final Review
+
+---
+
+## Features
+
+- **Adaptive AI questioning** — follow-ups are based on what you actually said, not a fixed script
+- **Real-time scoring** — clarity, depth, and correctness evaluated per answer
+- **AI model answers** — reference answers to compare against your own after each stage
+- **Session tracking** — tracks attempts and surfaces your weakest stages
+- **No hints mode** — simulates real interview conditions without guardrails
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js, React, TypeScript, Tailwind CSS |
+| Backend | Next.js API Routes (Serverless) |
+| AI | OpenRouter (LLM Gateway) |
+| Database & Auth | Supabase (PostgreSQL + Auth) |
+| Deployment | Vercel |
+
+---
+
+## Architecture
+
+```
+User Browser
+    │
+    ▼
+Next.js Frontend (Vercel)
+    │
+    ▼
+Serverless API Routes
+    │
+    ├──► Interview Orchestrator
+    │         │
+    │         ├──► Prompt Builder ──► LLM (OpenRouter) ──► Response
+    │         │
+    │         └──► Evaluation Engine ──► Scoring
+    │
+    └──► Supabase
+              ├── Sessions
+              ├── Attempts
+              └── Auth
+```
+
+---
+
+## Local Setup
+
+```bash
+git clone https://github.com/veddantt/Scalelab.git
+cd Scalelab
+npm install
+```
+
+Create a `.env.local` file:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+OPENROUTER_API_KEY=your_openrouter_api_key
+```
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Roadmap
 
-## Learn More
+- [x] AI interview engine
+- [x] Step-based system design flow
+- [x] Real-time scoring and evaluation
+- [x] AI model answers
+- [ ] Supabase Auth and session persistence
+- [ ] User dashboard with session history
+- [ ] Weak area detection and trend tracking
+- [ ] Performance analytics over time
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Author
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Vedant Patel**
+[Portfolio](https://veddantt.vercel.app) · [GitHub](https://github.com/veddantt) · [LinkedIn](https://linkedin.com/in/vedantpateldev)
