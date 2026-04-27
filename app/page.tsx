@@ -1,42 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight, Zap, Play, X, CheckCircle2, AlertCircle, Terminal, Cpu, Globe, Database } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 const NODES = [
-  { id: "user", x: 44, y: 85, label: "User", sub: "request" },
-  { id: "lb", x: 148, y: 85, label: "Load Bal", sub: "round-robin" },
-  { id: "svc1", x: 260, y: 44, label: "Service A", sub: "worker" },
-  { id: "svc2", x: 260, y: 126, label: "Service B", sub: "worker" },
-  { id: "cache", x: 372, y: 44, label: "Cache", sub: "redis" },
-  { id: "db", x: 372, y: 126, label: "Database", sub: "postgres" },
+  { id: "client", x: 40, y: 85, label: "Client", sub: "request" },
+  { id: "cdn", x: 130, y: 85, label: "CDN", sub: "edge" },
+  { id: "api", x: 220, y: 85, label: "API", sub: "gateway" },
+  { id: "svc", x: 310, y: 85, label: "Services", sub: "worker" },
+  { id: "db", x: 400, y: 85, label: "Database", sub: "postgres" },
 ];
 
 const EDGES = [
-  { from: "user", to: "lb" },
-  { from: "lb", to: "svc1" },
-  { from: "lb", to: "svc2" },
-  { from: "svc1", to: "cache" },
-  { from: "svc1", to: "db" },
-  { from: "svc2", to: "cache" },
-  { from: "svc2", to: "db" },
+  { from: "client", to: "cdn" },
+  { from: "cdn", to: "api" },
+  { from: "api", to: "svc" },
+  { from: "svc", to: "db" },
 ];
 
-const NW = 74, NH = 30;
+const NW = 70, NH = 32;
 
 function center(id: string) {
   const n = NODES.find((n) => n.id === id)!;
   return { x: n.x + NW / 2, y: n.y + NH / 2 };
 }
-
-const PROMPTS = [
-  "How would you scale this to 10M users?",
-  "What happens if the API layer fails?",
-  "How are you handling cache invalidation?",
-  "Where are the single points of failure?",
-];
 
 function SystemFlowCanvas() {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -46,41 +35,41 @@ function SystemFlowCanvas() {
     const canvas = ref.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d")!;
-    const W = 480, H = 185;
+    const W = 500, H = 200;
     canvas.width = W; canvas.height = H;
 
     function drawNode(n: (typeof NODES)[0], active: boolean, hov: boolean) {
       ctx.beginPath();
-      ctx.roundRect(n.x, n.y, NW, NH, 6);
-      ctx.fillStyle = hov ? "rgba(59,130,246,0.16)" : active ? "rgba(59,130,246,0.10)" : "rgba(255,255,255,0.03)";
+      ctx.roundRect(n.x, n.y, NW, NH, 8);
+      ctx.fillStyle = hov ? "rgba(59,130,246,0.1)" : active ? "rgba(59,130,246,0.05)" : "rgba(255,255,255,0.02)";
       ctx.fill();
-      ctx.strokeStyle = active || hov ? "rgba(59,130,246,0.45)" : "rgba(255,255,255,0.08)";
-      ctx.lineWidth = active || hov ? 1 : 0.8;
+      ctx.strokeStyle = active || hov ? "rgba(59,130,246,0.3)" : "rgba(255,255,255,0.05)";
+      ctx.lineWidth = active || hov ? 1.2 : 0.8;
       ctx.stroke();
       ctx.textAlign = "center";
-      ctx.font = "500 10px 'DM Mono',monospace";
-      ctx.fillStyle = active || hov ? "#93c5fd" : "#64748b";
-      ctx.fillText(n.label, n.x + NW / 2, n.y + 12);
-      ctx.font = "400 8px 'DM Mono',monospace";
-      ctx.fillStyle = active ? "#3b82f6" : "#1e3a5f";
-      ctx.fillText(n.sub, n.x + NW / 2, n.y + 23);
+      ctx.font = "600 10px 'Inter', sans-serif";
+      ctx.fillStyle = active || hov ? "#6366F1" : "#64748b";
+      ctx.fillText(n.label, n.x + NW / 2, n.y + 13);
+      ctx.font = "400 8px 'Inter', sans-serif";
+      ctx.fillStyle = active ? "#6366F1" : "#334155";
+      ctx.fillText(n.sub, n.x + NW / 2, n.y + 24);
     }
 
     function drawEdge(e: (typeof EDGES)[0], active: boolean) {
       const f = center(e.from), t = center(e.to);
       ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(t.x, t.y);
-      ctx.strokeStyle = active ? "rgba(59,130,246,0.35)" : "rgba(255,255,255,0.06)";
-      ctx.lineWidth = active ? 1.2 : 0.7;
+      ctx.strokeStyle = active ? "rgba(59,130,246,0.2)" : "rgba(255,255,255,0.03)";
+      ctx.lineWidth = active ? 1.5 : 0.8;
       ctx.stroke();
     }
 
     function drawParticle(e: (typeof EDGES)[0], pt: number) {
       const f = center(e.from), t = center(e.to);
       const x = f.x + (t.x - f.x) * pt, y = f.y + (t.y - f.y) * pt;
-      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2);
-      ctx.fillStyle = "#3b82f6"; ctx.fill();
-      ctx.beginPath(); ctx.arc(x, y, 5.5, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(59,130,246,0.22)"; ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = "#6366F1"; ctx.fill();
+      ctx.shadowBlur = 8; ctx.shadowColor = "#6366F1";
+      ctx.fill(); ctx.shadowBlur = 0;
     }
 
     let raf: number;
@@ -91,12 +80,12 @@ function SystemFlowCanvas() {
       EDGES.forEach((e, i) => drawEdge(e, i === edge));
       NODES.forEach((n) => drawNode(n, active.has(n.id), n.id === hovered));
       drawParticle(EDGES[edge], t);
-      state.current.t = (t + 0.018) % 1;
+      state.current.t = (t + 0.015) % 1;
       raf = requestAnimationFrame(draw);
     }
     draw();
 
-    const iv = setInterval(() => { state.current.edge = (state.current.edge + 1) % EDGES.length; state.current.t = 0; }, 1400);
+    const iv = setInterval(() => { state.current.edge = (state.current.edge + 1) % EDGES.length; state.current.t = 0; }, 1200);
 
     const onMove = (ev: MouseEvent) => {
       const r = canvas.getBoundingClientRect();
@@ -105,7 +94,6 @@ function SystemFlowCanvas() {
       state.current.hovered = NODES.find((n) => mx >= n.x && mx <= n.x + NW && my >= n.y && my <= n.y + NH)?.id ?? null;
     };
     canvas.addEventListener("mousemove", onMove);
-    canvas.addEventListener("mouseleave", () => (state.current.hovered = null));
     return () => { cancelAnimationFrame(raf); clearInterval(iv); };
   }, []);
 
@@ -113,133 +101,333 @@ function SystemFlowCanvas() {
 }
 
 function WorkspacePreview() {
-  const [idx, setIdx] = useState(0);
-  const [show, setShow] = useState(true);
-
-  useEffect(() => {
-    const iv = setInterval(() => {
-      setShow(false);
-      setTimeout(() => { setIdx((i) => (i + 1) % PROMPTS.length); setShow(true); }, 220);
-    }, 3200);
-    return () => clearInterval(iv);
-  }, []);
-
   return (
     <motion.div
-      initial={{ opacity: 0, y: 18 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.12 }}
-      style={{ background: "#0b0f1a", borderRadius: 12, border: "1px solid rgba(255,255,255,0.07)", overflow: "hidden", boxShadow: "0 28px 80px rgba(0,0,0,0.55)" }}
+      transition={{ duration: 0.6, delay: 0.2 }}
+      className="relative bg-[#0F172A] rounded-2xl border border-[#1E293B] overflow-hidden shadow-2xl shadow-black/50"
     >
-      {/* chrome */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.02)" }}>
-        {["#ef4444", "#f59e0b", "#22c55e"].map((c) => (
-          <div key={c} style={{ width: 9, height: 9, borderRadius: "50%", background: c, opacity: 0.65 }} />
-        ))}
-        <div style={{ flex: 1, height: 20, borderRadius: 4, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 8px" }}>
-          <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 9, color: "#94a3b8" }}>scalelab.app / interview / scale-10m</span>
+      {/* Chrome Header */}
+      <div className="flex items-center gap-6 px-4 py-3 border-b border-[#1E293B] bg-white/[0.01]">
+        <div className="flex gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-white/5" />
+          <div className="w-2.5 h-2.5 rounded-full bg-white/5" />
+          <div className="w-2.5 h-2.5 rounded-full bg-white/5" />
+        </div>
+        <div className="flex-1 px-3 py-1 rounded bg-[#070B14] border border-[#1E293B] text-[10px] text-[#94A3B8] font-mono text-center">
+          scalelab.ai / workspace
         </div>
       </div>
 
-      {/* canvas */}
-      <div style={{ padding: "20px 24px 14px" }}>
-        <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 8, letterSpacing: "0.18em", color: "#1e3a5f", textTransform: "uppercase", marginBottom: 16 }}>
-          Live system · URL shortener at scale
+      {/* Workspace Content */}
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
+            <span className="text-[11px] font-mono text-[#94A3B8] uppercase tracking-widest">AI Interviewing...</span>
+          </div>
+          <div className="px-2 py-0.5 rounded bg-[#6366F1]/10 border border-[#6366F1]/20 text-[10px] text-[#6366F1] font-mono">
+            Step 5: Architecture
+          </div>
         </div>
-        <SystemFlowCanvas />
-      </div>
 
-      {/* prompt bar */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: "11px 20px", display: "flex", alignItems: "center", gap: 9 }}>
-        <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 6px rgba(34,197,94,0.6)", flexShrink: 0 }} />
-        <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 10, color: "#2d3f55" }}>AI:</span>
-        <motion.span key={idx} animate={{ opacity: show ? 1 : 0 }} transition={{ duration: 0.2 }}
-          style={{ fontFamily: "'DM Mono',monospace", fontSize: 10, color: "#64748b" }}>
-          {PROMPTS[idx]}
-        </motion.span>
-        <motion.span animate={{ opacity: [1, 0, 1] }} transition={{ duration: 1, repeat: Infinity }}
-          style={{ display: "inline-block", width: 2, height: 11, background: "#3b82f6", marginLeft: 2, flexShrink: 0 }} />
+        <div className="space-y-6">
+          {/* AI Message */}
+          <div className="flex gap-3">
+            <div className="w-6 h-6 rounded bg-[#6366F1] flex items-center justify-center shrink-0">
+              <Zap className="w-3.5 h-3.5 text-white fill-white" />
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-[12px] font-medium text-white">How would you scale this to 10M users?</p>
+            </div>
+          </div>
+
+          {/* Diagram Area */}
+          <div className="py-4 bg-[#070B14] rounded-xl border border-dashed border-[#1E293B]">
+            <SystemFlowCanvas />
+          </div>
+
+          {/* Feedback Indicators */}
+          <div className="flex flex-wrap gap-2">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/5 border border-emerald-500/10 text-[11px] text-emerald-400 font-medium">
+              <CheckCircle2 className="w-3 h-3" /> Good separation
+            </div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#070B14] border border-[#1E293B] text-[10px] text-[#94A3B8] font-mono italic">
+              Sign up to save this session
+            </div>
+          </div>
+        </div>
       </div>
     </motion.div>
   );
 }
 
-export default function HomePage() {
-  return (
-    <main style={{ minHeight: "100vh", background: "#07090f", color: "#f1f5f9", overflowX: "hidden" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
-        *{box-sizing:border-box}
-        .btn-p{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 20px;border-radius:8px;background:#3b82f6;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;border:none;cursor:pointer;text-decoration:none;transition:background .15s,transform .12s}
-        .btn-p:hover{background:#2563eb;transform:translateY(-1px)}
-        .btn-g{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 20px;border-radius:8px;background:transparent;color:#64748b;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,0.09);cursor:pointer;text-decoration:none;transition:all .15s}
-        .btn-g:hover{border-color:rgba(255,255,255,0.18);color:#94a3b8;transform:translateY(-1px)}
-        .pill{padding:10px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.012);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:#94a3b8;display:flex;align-items:center;gap:10px;transition:border-color .2s,color .2s}
-        .pill:hover{border-color:rgba(59,130,246,0.28);color:#cbd5e1}
-        .pill::before{content:'';display:block;width:3px;height:3px;border-radius:50%;background:#3b82f6;flex-shrink:0}
-      `}</style>
+const DEMO_STEPS = [
+  {
+    title: "Phase 1: Requirements",
+    ai: "Design a scalable backend system with high read traffic.",
+    user: "I'll focus on low latency and eventual consistency for high availability.",
+    icon: Globe,
+    feedback: "✔ Good focus on availability",
+  },
+  {
+    title: "Phase 2: Scaling Strategy",
+    ai: "How would you design this for 10M active users?",
+    user: "I’d use a global CDN, API gateway, and horizontally scale stateless services.",
+    icon: Cpu,
+    feedback: "✔ Strong scaling mental model",
+  },
+  {
+    title: "Phase 3: Architecture Design",
+    ai: "What data storage layer would you choose?",
+    user: "A distributed NoSQL DB with Redis for caching hot paths.",
+    icon: Database,
+    feedback: "✔ Correct use of polyglot persistence",
+  },
+  {
+    title: "Phase 4: Feedback & Review",
+    ai: "Session Complete. Final Score: 8.5/10",
+    user: "Reviewing my tradeoffs and bottleneck analysis...",
+    icon: Terminal,
+    feedback: "⚠ Missing partitioning strategy; ⚠ Discuss failure cases",
+  }
+];
 
-      {/* bg */}
-      <div aria-hidden style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px)", backgroundSize: "44px 44px" }} />
-        <div style={{ position: "absolute", top: "-18%", right: "-6%", width: 520, height: 520, borderRadius: "50%", background: "radial-gradient(circle,rgba(59,130,246,.065) 0%,transparent 65%)" }} />
+function DemoModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setStep(0);
+      return;
+    }
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/80 backdrop-blur-md"
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="relative w-full max-w-2xl bg-[#070B14] border border-[#1E293B] rounded-3xl overflow-hidden shadow-2xl"
+      >
+        <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-lg hover:bg-white/5 transition-colors z-10">
+          <X className="w-5 h-5 text-[#94A3B8]" />
+        </button>
+
+        <div className="p-8 md:p-10">
+          <div className="mb-8">
+            <h3 className="text-2xl font-bold text-white mb-2">How ScaleLab Works</h3>
+            <p className="text-[#94A3B8] text-[14px]">Experience a realistic system design interview loop.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+            <div className="md:col-span-4 flex flex-col gap-3">
+              {DEMO_STEPS.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => setStep(i)}
+                  className={`text-left px-4 py-3 rounded-xl border transition-all ${
+                    step === i 
+                      ? "bg-[#6366F1]/10 border-[#6366F1]/30 text-[#6366F1]" 
+                      : "bg-[#0F172A]/40 border-[#1E293B] text-[#94A3B8] hover:border-[#94A3B8]/20"
+                  }`}
+                >
+                  <div className="text-[10px] font-mono uppercase tracking-widest mb-1 opacity-60">Step {i + 1}</div>
+                  <div className="text-[13px] font-bold">{s.title.split(": ")[1]}</div>
+                </button>
+              ))}
+            </div>
+
+            <div className="md:col-span-8 bg-[#0F172A] rounded-2xl border border-[#1E293B] p-6 relative min-h-[320px] flex flex-col">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 rounded-lg bg-[#6366F1]/10 border border-[#6366F1]/30 flex items-center justify-center">
+                  {(() => {
+                    const Icon = DEMO_STEPS[step].icon;
+                    return <Icon className="w-4 h-4 text-[#6366F1]" />;
+                  })()}
+                </div>
+                <h4 className="font-bold text-white text-[15px]">{DEMO_STEPS[step].title}</h4>
+              </div>
+
+              <div className="space-y-4 flex-1">
+                <div className="flex gap-3">
+                  <div className="w-5 h-5 rounded bg-[#6366F1] flex items-center justify-center shrink-0 mt-0.5">
+                    <Zap className="w-3 h-3 text-white fill-white" />
+                  </div>
+                  <p className="text-[13px] leading-relaxed text-[#E2E8F0]">{DEMO_STEPS[step].ai}</p>
+                </div>
+                <div className="flex gap-3 justify-end">
+                  <p className="text-[13px] leading-relaxed text-[#94A3B8] text-right bg-[#070B14] px-3 py-2 rounded-xl border border-[#1E293B]">
+                    {DEMO_STEPS[step].user}
+                  </p>
+                  <div className="w-5 h-5 rounded bg-[#1E293B] flex items-center justify-center shrink-0 mt-0.5">
+                    <div className="w-2 h-2 rounded-full bg-[#94A3B8]" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-[#1E293B]">
+                <div className="flex items-center gap-2 text-[12px] font-bold text-emerald-400">
+                  {DEMO_STEPS[step].feedback}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-between gap-6 border-t border-[#1E293B] pt-8">
+             <div className="text-[#94A3B8] text-[13px] italic font-bold">Ready to try it yourself?</div>
+             <div className="flex gap-3">
+               <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-[#94A3B8] hover:text-white transition-colors text-[14px] font-bold">
+                 Cancel
+               </button>
+               <Link href="/problems" className="px-6 py-2.5 bg-[#6366F1] hover:bg-[#818CF8] text-white rounded-xl font-bold transition-all shadow-[0_4px_15px_rgba(59,130,246,0.2)] text-[14px]">
+                 Start Practicing →
+               </Link>
+             </div>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+export default function HomePage() {
+  const [demoOpen, setDemoOpen] = useState(false);
+
+  return (
+    <main className="relative min-h-screen bg-[#070B14] text-[#E2E8F0] overflow-x-hidden selection:bg-[#6366F1]/30 selection:text-white">
+      {/* Background Decor */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(59,130,246,0.05),transparent_50%)]" />
+        <div className="absolute top-0 left-0 w-full h-full opacity-[0.02] mix-blend-overlay" style={{ backgroundImage: "url('https://grainy-gradients.vercel.app/noise.svg')" }} />
       </div>
 
-      <div style={{ position: "relative", zIndex: 1, maxWidth: 1160, margin: "0 auto", padding: "0 32px" }}>
+      <div className="relative z-10 max-w-[1400px] mx-auto px-6 md:px-10">
+        {/* Hero Section */}
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center pt-16 pb-24 lg:pt-24 lg:pb-32">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 text-[10px] font-bold text-[#6366F1] uppercase tracking-widest mb-8">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#6366F1] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#6366F1]"></span>
+              </span>
+              AI System Design Practice
+            </div>
 
-        {/* hero */}
-        <section style={{ display: "grid", gridTemplateColumns: "1fr 1.05fr", gap: 56, alignItems: "center", paddingTop: 72, paddingBottom: 68 }}>
-          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "4px 12px", borderRadius: 20, border: "1px solid rgba(139,92,246,0.22)", background: "rgba(139,92,246,0.07)", marginBottom: 26 }}>
-              <motion.div animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 2, repeat: Infinity }}
-                style={{ width: 5, height: 5, borderRadius: "50%", background: "#a78bfa" }} />
-              <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 9, letterSpacing: "0.1em", color: "#c4b5fd", textTransform: "uppercase" }}>Interview Simulator</span>
-            </div>
-            <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: "clamp(40px,4.8vw,56px)", fontWeight: 800, lineHeight: 0.98, letterSpacing: "-.035em", color: "#f1f5f9", margin: "0 0 5px" }}>Think Like a Systems Engineer.</h1>
-            <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: "clamp(40px,4.8vw,56px)", fontWeight: 800, lineHeight: 0.98, letterSpacing: "-.035em", color: "#64748b", margin: "0 0 28px" }}>Not a LeetCode Solver.</h1>
-            <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, lineHeight: 1.75, color: "#94a3b8", maxWidth: 400, margin: "0 0 32px" }}>
-              Break problems into requirements, scale, APIs, and architecture. Get real-time feedback on tradeoffs — like an actual interview.
+            <h1 className="text-5xl md:text-7xl font-bold text-white tracking-tight leading-[1.05] mb-8">
+              Think Like a <span className="text-[#6366F1]">Systems Engineer.</span> <br />
+              <span className="text-[#94A3B8]">Not a LeetCode Solver.</span>
+            </h1>
+
+            <p className="text-lg md:text-xl text-[#94A3B8] leading-relaxed mb-10 max-w-xl">
+              Break problems into requirements, scale, APIs, and architecture.
+              Get real-time feedback on tradeoffs — like an actual interview.
             </p>
-            <div style={{ display: "flex", gap: 10, marginBottom: 36 }}>
-              <Link href="/problems" className="btn-p" style={{ backgroundColor: "#8b5cf6" }}>Start Interview <ArrowRight style={{ width: 12, height: 12 }} /></Link>
-              <Link href="/problems" className="btn-g">Explore Problems <ArrowUpRight style={{ width: 12, height: 12 }} /></Link>
+
+            <div className="flex flex-wrap gap-4 mb-8">
+              <Link href="/problems" className="px-8 py-4 bg-[#6366F1] hover:bg-[#818CF8] text-white rounded-2xl font-bold transition-all shadow-lg shadow-[#6366F1]/20 hover:-translate-y-0.5 active:scale-95 flex items-center gap-2 group">
+                Start Interview <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <button 
+                onClick={() => setDemoOpen(true)}
+                className="px-8 py-4 bg-[#0F172A] hover:bg-[#1E293B] border border-[#1E293B] hover:border-[#94A3B8]/20 text-white rounded-2xl font-bold transition-all hover:-translate-y-0.5 active:scale-95 flex items-center gap-2"
+              >
+                See How It Works <Play className="w-4 h-4 fill-white" />
+              </button>
             </div>
-            <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 10, color: "#64748b", letterSpacing: "0.06em" }}>Try instantly. Sign up to save sessions and track progress.</span>
+
+            <div className="flex items-center gap-3 text-[13px] text-[#94A3B8] font-bold italic opacity-60">
+              Try instantly. Sign up to save sessions and track progress.
+            </div>
           </motion.div>
+
           <WorkspacePreview />
         </section>
 
-        {/* truth */}
-        <section style={{ borderTop: "1px solid rgba(255,255,255,0.04)", padding: "64px 0", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 56, alignItems: "center" }}>
-          <div>
-            <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 8, letterSpacing: "0.18em", color: "#a78bfa", textTransform: "uppercase", marginBottom: 18 }}>What Interviews Actually Test</div>
-            <h2 style={{ fontFamily: "'Syne',sans-serif", fontSize: "clamp(22px,2.8vw,30px)", fontWeight: 700, lineHeight: 1.1, letterSpacing: "-.025em", color: "#f1f5f9", margin: 0 }}>
-              It's about tradeoffs,<br />not just drawing boxes.
+        {/* Feature Highlights */}
+        <section className="py-24 border-t border-[#1E293B]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+            <div>
+              <div className="text-[11px] font-bold text-[#6366F1] uppercase tracking-widest mb-4">The Methodology</div>
+              <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight mb-6">
+                Interviews test how you think,<br />not what you memorized.
+              </h2>
+              <p className="text-[#94A3B8] text-lg leading-relaxed max-w-lg mb-8">
+                Most prep tools give you static diagrams to copy. 
+                ScaleLab puts you under pressure, forcing you to justify every node and cache layer.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[
+                { label: "Requirements First", desc: "Define functional and non-functional goals.", icon: Globe },
+                { label: "Scale Analysis", desc: "Calculate QPS, storage, and throughput.", icon: Cpu },
+                { label: "Deep-Dive APIs", desc: "Design contract and endpoint structures.", icon: Zap },
+                { label: "Storage Strategy", desc: "Choose DBs based on CAP theorem.", icon: Database }
+              ].map((item, i) => (
+                <div key={i} className="p-6 rounded-2xl bg-[#0F172A] border border-[#1E293B] hover:border-[#6366F1]/30 transition-colors group">
+                  <div className="w-10 h-10 rounded-xl bg-[#070B14] border border-[#1E293B] flex items-center justify-center mb-4 group-hover:bg-[#6366F1]/10 transition-colors">
+                    <item.icon className="w-5 h-5 text-[#94A3B8] group-hover:text-[#6366F1] transition-colors" />
+                  </div>
+                  <h4 className="font-bold text-white mb-1">{item.label}</h4>
+                  <p className="text-xs text-[#94A3B8] leading-relaxed">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Statement Section */}
+        <section className="py-32 text-center relative">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-4xl md:text-7xl font-bold text-white tracking-tight leading-[1.1] mb-8">
+              Most Engineers Memorize Diagrams. <br />
+              <span className="text-[#1E293B]">Few Can Design Systems Under Pressure.</span>
             </h2>
-            <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, color: "#94a3b8", marginTop: 12, lineHeight: 1.7 }}>
-              Most prep tools give you static diagrams.<br />This puts you under pressure.
+            <p className="text-xl text-[#94A3B8] mb-12 font-medium">
+              This is where you learn to think — not copy. Start your journey into senior engineering.
             </p>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {["What breaks under scale", "Where latency really comes from", "Tradeoffs between consistency and speed", "How real systems evolve"].map((t) => (
-              <div key={t} className="pill" style={{ color: "#cbd5e1" }}>{t}</div>
-            ))}
+            <Link href="/problems" className="inline-flex items-center gap-2 px-10 py-5 bg-[#6366F1] hover:bg-[#818CF8] text-white rounded-2xl font-bold text-lg transition-all shadow-lg shadow-[#6366F1]/30 hover:-translate-y-1 active:scale-95">
+              Ready to practice under pressure? →
+            </Link>
           </div>
         </section>
 
-        {/* cta */}
-        <section style={{ borderTop: "1px solid rgba(255,255,255,0.04)", padding: "80px 0 96px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", position: "relative" }}>
-          <div aria-hidden style={{ position: "absolute", top: "25%", left: "50%", transform: "translateX(-50%)", width: 480, height: 150, borderRadius: "50%", background: "radial-gradient(ellipse,rgba(139,92,246,0.055) 0%,transparent 70%)", pointerEvents: "none" }} />
-          <h2 style={{ fontFamily: "'Syne',sans-serif", fontSize: "clamp(30px,4vw,48px)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-.03em", color: "#f1f5f9", margin: "0 0 4px" }}>Most Engineers Memorize Diagrams.</h2>
-          <h2 style={{ fontFamily: "'Syne',sans-serif", fontSize: "clamp(30px,4vw,48px)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-.03em", color: "#64748b", margin: "0 0 22px" }}>Few Can Design Systems Under Pressure.</h2>
-          <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 16, color: "#94a3b8", marginBottom: 36 }}>Start a real system design interview and learn how to reason through scale, APIs, databases, and tradeoffs.</p>
-          <Link href="/problems" className="btn-p" style={{ backgroundColor: "#8b5cf6", height: 44, fontSize: 14, padding: "0 28px" }}>
-            Start Interview <ArrowRight style={{ width: 13, height: 13 }} />
-          </Link>
-          <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 10, letterSpacing: "0.05em", color: "#64748b", marginTop: 20 }}>Try instantly. Sign up when you want to save progress.</span>
-        </section>
-
+        {/* Footer info */}
+        <footer className="py-12 border-t border-[#1E293B] flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-3">
+            <Zap className="w-5 h-5 text-[#6366F1] fill-[#6366F1]" />
+            <span className="font-bold text-white tracking-tight">ScaleLab</span>
+          </div>
+          <div className="text-[12px] text-[#94A3B8] font-bold opacity-60">
+            © 2026 ScaleLab. The premium system design interview platform.
+          </div>
+          <div className="flex gap-6">
+             <Link href="/problems" className="text-[12px] text-[#94A3B8] hover:text-white transition-colors font-bold uppercase tracking-widest">Challenges</Link>
+             <Link href="/problems" className="text-[12px] text-[#94A3B8] hover:text-white transition-colors font-bold uppercase tracking-widest">Practice Mode</Link>
+          </div>
+        </footer>
       </div>
+
+      <AnimatePresence>
+        {demoOpen && <DemoModal isOpen={demoOpen} onClose={() => setDemoOpen(false)} />}
+      </AnimatePresence>
     </main>
   );
 }

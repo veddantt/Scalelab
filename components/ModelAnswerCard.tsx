@@ -52,17 +52,17 @@ function SectionHeader({
 
 function Tag({ text }: { text: string }) {
   return (
-    <span className="inline-block px-2 py-0.5 rounded-md bg-gray-800/60 border border-gray-700/40 text-[11px] text-gray-300 font-medium">
+    <span className="inline-block px-2 py-0.5 rounded-md bg-[#0F172A] border border-[#1E293B] text-[11px] text-[#94A3B8] font-medium">
       {text}
     </span>
   );
 }
 
-function BulletList({ items, dotColor = "text-purple-500" }: { items: string[]; dotColor?: string }) {
+function BulletList({ items, dotColor = "text-[#6366F1]" }: { items: string[]; dotColor?: string }) {
   return (
     <ul className="space-y-2">
       {items.map((item, i) => (
-        <li key={i} className="flex items-start gap-2 text-[13px] text-gray-300 leading-relaxed">
+        <li key={i} className="flex items-start gap-2 text-[13px] text-[#94A3B8] leading-relaxed">
           <span className={`${dotColor} mt-[3px] shrink-0`}>•</span>
           <span>{item}</span>
         </li>
@@ -127,17 +127,17 @@ export default function ModelAnswerCard({
   const handleCollapse = () => setRevealed(false);
 
   return (
-    <div className="rounded-2xl border border-purple-500/20 bg-gradient-to-br from-purple-950/20 to-blue-950/10 overflow-hidden">
+    <div className="rounded-3xl border border-[#1E293B] bg-[#0F172A] overflow-hidden shadow-2xl">
       {/* ─── Header ─── */}
-      <div className="px-6 py-5 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
-            <Sparkles className="w-5 h-5 text-purple-400" />
+      <div className="px-6 py-8 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-[#6366F1]/5 border border-[#6366F1]/10 flex items-center justify-center shrink-0">
+            <Sparkles className="w-6 h-6 text-[#6366F1]" />
           </div>
           <div>
-            <h2 className="text-white font-bold text-[15px]">Model Answer</h2>
-            <p className="text-gray-400 text-[12px] mt-0.5">
-              See how a strong candidate would structure this system design answer.
+            <h2 className="text-white font-bold text-lg tracking-tight">Model Solution</h2>
+            <p className="text-[#94A3B8] text-[13px] mt-0.5">
+              Reference architectural blueprint and tradeoff analysis.
             </p>
           </div>
         </div>
@@ -147,24 +147,24 @@ export default function ModelAnswerCard({
             <button
               onClick={handleReveal}
               disabled={loading}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold text-[13px] transition-all shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#6366F1] hover:bg-[#818CF8] text-white font-bold text-[13px] transition-all shadow-lg shadow-[#6366F1]/20 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Generating...
+                  Analyzing...
                 </>
               ) : (
                 <>
                   <BookOpen className="w-4 h-4" />
-                  Reveal Model Answer
+                  Reveal Blueprint
                 </>
               )}
             </button>
           ) : (
             <button
               onClick={handleCollapse}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gray-800/60 border border-gray-700/40 text-gray-400 hover:text-white text-[12px] font-medium transition"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#070B14] border border-[#1E293B] text-[#94A3B8] hover:text-white text-[12px] font-bold transition-all"
             >
               <ChevronUp className="w-4 h-4" />
               Collapse
@@ -175,52 +175,54 @@ export default function ModelAnswerCard({
 
       {/* ─── Error ─── */}
       {error && (
-        <div className="mx-6 mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[12px]">
+        <div className="mx-6 mb-6 p-4 rounded-2xl bg-red-500/5 border border-red-500/10 text-red-400 text-[12px] font-bold">
           {error} — Showing fallback answer.
         </div>
       )}
 
       {/* ─── Content ─── */}
       {revealed && answer && (
-        <div className="border-t border-purple-500/10 px-6 py-6 space-y-7">
+        <div className="border-t border-[#1E293B] px-8 py-10 space-y-10 bg-white/[0.01]">
 
           {/* Overview */}
           <div>
-            <SectionHeader icon={BookOpen} label="Overview" color="text-purple-400" />
-            <p className="text-[13px] text-gray-300 leading-relaxed">{answer.overview}</p>
+            <SectionHeader icon={BookOpen} label="Overview" color="text-[#6366F1]" />
+            <p className="text-[14px] text-[#E2E8F0] leading-relaxed font-medium">{answer.overview}</p>
           </div>
 
-          {/* Requirements */}
-          {answer.requirements?.length > 0 && (
-            <div>
-              <SectionHeader icon={CheckCircle2} label="Requirements" color="text-blue-400" />
-              <BulletList items={answer.requirements} dotColor="text-blue-500" />
-            </div>
-          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+             {/* Requirements */}
+             {answer.requirements?.length > 0 && (
+               <div>
+                 <SectionHeader icon={CheckCircle2} label="Requirements" color="text-emerald-400" />
+                 <BulletList items={answer.requirements} dotColor="text-emerald-500" />
+               </div>
+             )}
 
-          {/* Scale Assumptions */}
-          {answer.scaleAssumptions?.length > 0 && (
-            <div>
-              <SectionHeader icon={TrendingUp} label="Scale Assumptions" color="text-emerald-400" />
-              <BulletList items={answer.scaleAssumptions} dotColor="text-emerald-500" />
-            </div>
-          )}
+             {/* Scale Assumptions */}
+             {answer.scaleAssumptions?.length > 0 && (
+               <div>
+                 <SectionHeader icon={TrendingUp} label="Scale Assumptions" color="text-amber-400" />
+                 <BulletList items={answer.scaleAssumptions} dotColor="text-amber-500" />
+               </div>
+             )}
+          </div>
 
           {/* API Design */}
           {answer.apiDesign?.length > 0 && (
             <div>
-              <SectionHeader icon={Code2} label="API Design" color="text-cyan-400" />
-              <div className="space-y-2">
+              <SectionHeader icon={Code2} label="API Design" color="text-[#6366F1]" />
+              <div className="grid grid-cols-1 gap-3">
                 {answer.apiDesign.map((api, i) => (
                   <div
                     key={i}
-                    className="flex flex-wrap items-start gap-2.5 p-3 rounded-xl bg-gray-900/40 border border-gray-800/40"
+                    className="flex flex-wrap items-center gap-4 p-4 rounded-2xl bg-[#070B14] border border-[#1E293B]"
                   >
-                    <Tag text={api.method} />
-                    <code className="text-[12px] text-cyan-300 font-mono bg-gray-800/60 px-2 py-0.5 rounded-md">
+                    <div className="px-2 py-1 rounded bg-[#6366F1]/10 border border-[#6366F1]/20 text-[10px] text-[#6366F1] font-bold uppercase tracking-widest">{api.method}</div>
+                    <code className="text-[12px] text-white font-mono bg-[#1E293B] px-2 py-1 rounded-md">
                       {api.endpoint}
                     </code>
-                    <span className="text-[12px] text-gray-400 flex-1">{api.purpose}</span>
+                    <span className="text-[13px] text-[#94A3B8] font-medium">{api.purpose}</span>
                   </div>
                 ))}
               </div>
@@ -230,23 +232,23 @@ export default function ModelAnswerCard({
           {/* Data Model */}
           {answer.dataModel?.length > 0 && (
             <div>
-              <SectionHeader icon={Database} label="Data Model" color="text-violet-400" />
-              <div className="space-y-3">
+              <SectionHeader icon={Database} label="Data Model" color="text-cyan-400" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {answer.dataModel.map((entity, i) => (
                   <div
                     key={i}
-                    className="p-4 rounded-xl bg-gray-900/40 border border-gray-800/40"
+                    className="p-5 rounded-2xl bg-[#070B14] border border-[#1E293B]"
                   >
-                    <h4 className="text-[13px] font-semibold text-violet-300 mb-2 font-mono">
+                    <h4 className="text-[14px] font-bold text-white mb-3 font-mono">
                       {entity.entity}
                     </h4>
-                    <div className="flex flex-wrap gap-1.5 mb-2">
+                    <div className="flex flex-wrap gap-2 mb-3">
                       {entity.fields.map((f, j) => (
                         <Tag key={j} text={f} />
                       ))}
                     </div>
                     {entity.notes && (
-                      <p className="text-[11px] text-gray-500 leading-relaxed">{entity.notes}</p>
+                      <p className="text-[11px] text-[#94A3B8] leading-relaxed italic">{entity.notes}</p>
                     )}
                   </div>
                 ))}
@@ -257,17 +259,17 @@ export default function ModelAnswerCard({
           {/* Architecture */}
           {answer.architecture?.length > 0 && (
             <div>
-              <SectionHeader icon={Layers} label="Architecture" color="text-orange-400" />
-              <div className="space-y-2">
+              <SectionHeader icon={Layers} label="Architecture" color="text-[#6366F1]" />
+              <div className="space-y-3">
                 {answer.architecture.map((item, i) => (
                   <div
                     key={i}
-                    className="flex gap-3 p-3 rounded-xl bg-gray-900/40 border border-gray-800/40"
+                    className="flex gap-4 p-4 rounded-2xl bg-[#070B14] border border-[#1E293B]"
                   >
-                    <span className="text-[12px] font-semibold text-orange-300 shrink-0 min-w-[160px]">
+                    <span className="text-[13px] font-bold text-white shrink-0 min-w-[160px]">
                       {item.component}
                     </span>
-                    <span className="text-[12px] text-gray-400 leading-relaxed">
+                    <span className="text-[13px] text-[#94A3B8] leading-relaxed font-medium">
                       {item.responsibility}
                     </span>
                   </div>
@@ -276,36 +278,30 @@ export default function ModelAnswerCard({
             </div>
           )}
 
-          {/* Tradeoffs */}
-          {answer.tradeoffs?.length > 0 && (
-            <div>
-              <SectionHeader icon={ArrowLeftRight} label="Tradeoffs" color="text-blue-400" />
-              <BulletList items={answer.tradeoffs} dotColor="text-blue-500" />
-            </div>
-          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+             {/* Tradeoffs */}
+             {answer.tradeoffs?.length > 0 && (
+               <div>
+                 <SectionHeader icon={ArrowLeftRight} label="Tradeoffs" color="text-[#6366F1]" />
+                 <BulletList items={answer.tradeoffs} dotColor="text-[#6366F1]" />
+               </div>
+             )}
 
-          {/* Bottlenecks */}
-          {answer.bottlenecks?.length > 0 && (
-            <div>
-              <SectionHeader icon={AlertTriangle} label="Bottlenecks" color="text-red-400" />
-              <BulletList items={answer.bottlenecks} dotColor="text-red-500" />
-            </div>
-          )}
-
-          {/* Scaling Plan */}
-          {answer.scalingPlan?.length > 0 && (
-            <div>
-              <SectionHeader icon={GitBranch} label="Scaling Plan" color="text-emerald-400" />
-              <BulletList items={answer.scalingPlan} dotColor="text-emerald-500" />
-            </div>
-          )}
+             {/* Bottlenecks */}
+             {answer.bottlenecks?.length > 0 && (
+               <div>
+                 <SectionHeader icon={AlertTriangle} label="Bottlenecks" color="text-red-400" />
+                 <BulletList items={answer.bottlenecks} dotColor="text-red-500" />
+               </div>
+             )}
+          </div>
 
           {/* How to explain */}
           {answer.howToExplainInInterview && (
-            <div className="p-4 rounded-xl bg-purple-900/20 border border-purple-500/20">
-              <SectionHeader icon={MessageSquare} label="How to Explain in an Interview" color="text-purple-400" />
-              <p className="text-[13px] text-gray-300 leading-relaxed">
-                {answer.howToExplainInInterview}
+            <div className="p-6 rounded-2xl bg-[#6366F1]/5 border border-[#6366F1]/10">
+              <SectionHeader icon={MessageSquare} label="Coach Strategy" color="text-[#6366F1]" />
+              <p className="text-[13px] text-[#E2E8F0] leading-relaxed italic font-medium">
+                "{answer.howToExplainInInterview}"
               </p>
             </div>
           )}
@@ -314,17 +310,16 @@ export default function ModelAnswerCard({
 
       {/* ─── Loading skeleton ─── */}
       {loading && (
-        <div className="border-t border-purple-500/10 px-6 py-8">
-          <div className="flex flex-col items-center gap-3 text-gray-500">
-            <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
-            <p className="text-[13px] font-medium">Generating model answer…</p>
-            <p className="text-[11px] text-gray-600">This may take 10–20 seconds</p>
+        <div className="border-t border-[#1E293B] px-8 py-12">
+          <div className="flex flex-col items-center gap-4 text-[#94A3B8]">
+            <Loader2 className="w-8 h-8 animate-spin text-[#6366F1]" />
+            <p className="text-[12px] font-bold uppercase tracking-widest">Synthesizing System Blueprint…</p>
           </div>
-          <div className="mt-6 space-y-3">
-            {[80, 60, 90, 50, 70].map((w, i) => (
+          <div className="mt-10 space-y-4 max-w-md mx-auto">
+            {[80, 60, 90].map((w, i) => (
               <div
                 key={i}
-                className="h-3 rounded-full bg-gray-800/60 animate-pulse"
+                className="h-2 rounded-full bg-[#1E293B] animate-pulse"
                 style={{ width: `${w}%` }}
               />
             ))}

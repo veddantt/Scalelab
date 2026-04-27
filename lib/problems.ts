@@ -15,10 +15,20 @@ export interface ArchPreviewEdge {
   to: string;
 }
 
+export interface SystemProfile {
+  users: string;
+  qps: string;
+  latency: string;
+  storage: string;
+  type: "Read-heavy" | "Write-heavy" | "Real-time" | "Distributed infra";
+  interviewGuidance: string;
+}
+
 export interface ProblemMeta {
   problem: Problem;
   requirements: string[];
   practiceSkills: string[];
+  systemProfile: SystemProfile;
   archPreview: {
     nodes: ArchPreviewNode[];
     edges: ArchPreviewEdge[];
@@ -45,6 +55,14 @@ export const problemMeta: ProblemMeta[] = [
       "Support custom aliases and expiration",
     ],
     practiceSkills: ["Consistent hashing", "Redis caching", "CDN edge", "Base62 encoding", "Write-heavy vs read-heavy tradeoffs"],
+    systemProfile: {
+      users: "100M+ Monthly",
+      qps: "1M Read / 10k Write",
+      latency: "< 10ms (Redirect)",
+      storage: "500TB (Archive)",
+      type: "Read-heavy",
+      interviewGuidance: "Focus on read-heavy traffic, low-latency redirects, caching, and collision handling.",
+    },
     archPreview: {
       nodes: [
         { id: "c", label: "Client", type: "client" },
@@ -82,6 +100,14 @@ export const problemMeta: ProblemMeta[] = [
       "Persistent chat history with search",
     ],
     practiceSkills: ["WebSocket connection management", "Pub/Sub fanout", "Message ordering", "Horizontal scaling", "Eventual consistency"],
+    systemProfile: {
+      users: "50M DAU",
+      qps: "500k Concurrent",
+      latency: "< 50ms (E2E)",
+      storage: "2PB (History)",
+      type: "Real-time",
+      interviewGuidance: "Focus on real-time delivery, WebSockets, ordering, fanout, and presence.",
+    },
     archPreview: {
       nodes: [
         { id: "c", label: "Client", type: "client" },
@@ -119,6 +145,14 @@ export const problemMeta: ProblemMeta[] = [
       "Restaurant and driver matching within 1km radius",
     ],
     practiceSkills: ["Geospatial indexing", "Event-driven architecture", "Saga pattern", "Payment idempotency", "Location streaming"],
+    systemProfile: {
+      users: "10M Active",
+      qps: "5k Orders/min",
+      latency: "< 200ms (Search)",
+      storage: "100TB (Geo-logs)",
+      type: "Distributed infra",
+      interviewGuidance: "Focus on geo-matching, real-time location updates, consistency, and dispatch latency.",
+    },
     archPreview: {
       nodes: [
         { id: "c", label: "Client", type: "client" },
@@ -156,6 +190,14 @@ export const problemMeta: ProblemMeta[] = [
       "Graceful degradation on Redis failure",
     ],
     practiceSkills: ["Token bucket vs sliding window", "Redis atomic operations", "Distributed coordination", "Edge caching", "Failure modes"],
+    systemProfile: {
+      users: "1B+ Global Requests",
+      qps: "10M+ RPS",
+      latency: "< 1ms (Decision)",
+      storage: "10TB (Counters)",
+      type: "Read-heavy",
+      interviewGuidance: "Focus on ultra-low latency, distributed counters, consistency, and abuse prevention.",
+    },
     archPreview: {
       nodes: [
         { id: "c", label: "Client", type: "client" },
@@ -191,6 +233,14 @@ export const problemMeta: ProblemMeta[] = [
       "Full-text search across file metadata",
     ],
     practiceSkills: ["Chunked upload", "Content-addressable storage", "Delta sync", "Object storage (S3)", "Metadata indexing"],
+    systemProfile: {
+      users: "200M Users",
+      qps: "1k Uploads/sec",
+      latency: "N/A (Throughput focus)",
+      storage: "100EB (Exabytes)",
+      type: "Write-heavy",
+      interviewGuidance: "Focus on chunked uploads, deduplication, object storage, and metadata indexing.",
+    },
     archPreview: {
       nodes: [
         { id: "c", label: "Client", type: "client" },
@@ -228,6 +278,14 @@ export const problemMeta: ProblemMeta[] = [
       "User preference management per channel",
     ],
     practiceSkills: ["Priority queues", "Fan-out patterns", "Retry with backoff", "Multi-channel delivery", "User preference systems"],
+    systemProfile: {
+      users: "500M Users",
+      qps: "100k Messages/sec",
+      latency: "< 1s (Critical)",
+      storage: "200TB (Logs)",
+      type: "Distributed infra",
+      interviewGuidance: "Focus on priority queues, rate limiting, retries, and multi-channel delivery.",
+    },
     archPreview: {
       nodes: [
         { id: "svc", label: "Event Source", type: "service" },
@@ -266,6 +324,14 @@ export const problemMeta: ProblemMeta[] = [
       "Support personalized and typo-tolerant suggestions",
     ],
     practiceSkills: ["Trie / prefix indexing", "Low-latency API design", "Ranking strategies", "Hot key handling", "Analytics pipeline"],
+    systemProfile: {
+      users: "2B Global Users",
+      qps: "1M+ RPS",
+      latency: "< 20ms (Typing)",
+      storage: "1PB (Trie Data)",
+      type: "Real-time",
+      interviewGuidance: "Focus on low latency, prefix trees (Trie), top-K ranking, and caching.",
+    },
     archPreview: {
       nodes: [
         { id: "c", label: "Client", type: "client" },
@@ -308,6 +374,14 @@ export const problemMeta: ProblemMeta[] = [
       "Track status, history, and execution logs per job",
     ],
     practiceSkills: ["Cron scheduling model", "Worker coordination", "Distributed locking", "Retry & dead-letter queues", "Idempotency"],
+    systemProfile: {
+      users: "100k Developers",
+      qps: "50k Jobs/min",
+      latency: "< 100ms (Trigger)",
+      storage: "50TB (History)",
+      type: "Distributed infra",
+      interviewGuidance: "Focus on worker coordination, retries, idempotency, and fault tolerance.",
+    },
     archPreview: {
       nodes: [
         { id: "c", label: "Admin Dashboard", type: "client" },
@@ -350,6 +424,14 @@ export const problemMeta: ProblemMeta[] = [
       "Handle viral traffic spikes without quality degradation",
     ],
     practiceSkills: ["Object storage design", "Transcoding pipeline", "CDN strategy", "Adaptive bitrate streaming", "Analytics at scale"],
+    systemProfile: {
+      users: "2B+ Users",
+      qps: "5M Concurrent",
+      latency: "< 2s (Start)",
+      storage: "1000PB (Videos)",
+      type: "Read-heavy",
+      interviewGuidance: "Focus on chunked streaming, CDN delivery, adaptive bitrate, and transcoding pipelines.",
+    },
     archPreview: {
       nodes: [
         { id: "c", label: "Web / Mobile Client", type: "client" },

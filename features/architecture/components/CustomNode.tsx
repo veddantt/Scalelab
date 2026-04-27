@@ -31,9 +31,9 @@ export const nodeTypeConfig: Record<NodeType, NodeTypeConfig> = {
   client: {
     icon: Monitor,
     color: "text-blue-400",
-    border: "border-blue-500/30",
+    border: "border-[#6366F1]/30",
     glow: "shadow-blue-500/20",
-    bg: "bg-blue-500/5",
+    bg: "bg-[#6366F1]/5",
     gradient: "from-blue-500/20 to-blue-600/5",
   },
   gateway: {

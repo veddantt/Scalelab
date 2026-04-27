@@ -9,7 +9,7 @@ import Navbar from "@/components/Navbar";
 import SaveButton from "@/components/SaveButton";
 import ReactFlow, { Background, Controls, MiniMap, Panel, useReactFlow, ReactFlowProvider } from "reactflow";
 import "reactflow/dist/style.css";
-import { getProblem } from "@/lib/scenarios";
+import { getProblemMeta } from "@/lib/problems";
 import { nodeTypeConfig, nodeTypes } from "@/features/architecture/components/CustomNode";
 import { getLayoutedElements, prepareNodes, prepareEdges } from "@/features/architecture/utils/layout";
 import { AlertTriangle, ArrowLeftRight, TrendingUp, Download, RefreshCw, ChevronRight, Sparkles, BarChart3, Info, Loader2, Shield, Zap, Layers } from "lucide-react";
@@ -25,7 +25,8 @@ function ArchitectureInner() {
   const params = useParams();
   const router = useRouter();
   const problemId = params.id as string;
-  const scenario = getProblem(problemId);
+  const meta = getProblemMeta(problemId);
+  const scenario = meta?.problem;
   const problem = scenario?.title || "System Design Problem";
   const flowRef = useRef<HTMLDivElement>(null);
   const { fitView } = useReactFlow();
@@ -154,7 +155,7 @@ function ArchitectureInner() {
     try {
       const el = flowRef.current.querySelector(".react-flow__viewport") as HTMLElement;
       if (!el) return;
-      const png = await toPng(el, { backgroundColor: "#020617", pixelRatio: 2 });
+      const png = await toPng(el, { backgroundColor: "#070B14", pixelRatio: 2 });
       const link = document.createElement("a");
       link.download = `${problemId}-architecture.png`;
       link.href = png;
@@ -188,15 +189,15 @@ function ArchitectureInner() {
   /* ─── Empty state ─── */
   if (noArchitecture) {
     return (
-      <div className="h-screen flex flex-col bg-[#020617] text-white">
+      <div className="h-screen flex flex-col bg-[#070B14] text-white">
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-6">
-            <Sparkles className="w-7 h-7 text-purple-400" />
+          <div className="w-16 h-16 rounded-2xl bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center mb-6">
+            <Sparkles className="w-7 h-7 text-[#6366F1]" />
           </div>
           <h1 className="text-3xl font-bold mb-3">No Architecture Yet</h1>
-          <p className="text-gray-400 mb-8 max-w-md">Complete the interview and generate your architecture diagram to see it here.</p>
-          <a href={`/interview/${problemId}`} className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-purple-500/20">
+          <p className="text-[#94A3B8] mb-8 max-w-md">Complete the interview and generate your architecture diagram to see it here.</p>
+          <a href={`/interview/${problemId}`} className="px-6 py-2.5 bg-[#6366F1] hover:bg-[#818CF8] text-white rounded-xl font-bold transition-all shadow-lg shadow-[#6366F1]/20">
             Go to Interview
           </a>
         </div>
@@ -209,7 +210,7 @@ function ArchitectureInner() {
   const renderSidebarContent = () => (
     <>
       {/* Tab bar */}
-      <div className="flex border-b border-gray-800/50 shrink-0">
+      <div className="flex border-b border-[#1E293B] shrink-0">
         {([
           { id: "overview" as const, label: "System Overview", icon: BarChart3 },
           { id: "inspector" as const, label: "Inspector", icon: Info },
@@ -217,44 +218,38 @@ function ArchitectureInner() {
           const TIcon = t.icon;
           return (
             <button key={t.id} onClick={() => setRightTab(t.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-[11px] font-semibold transition-all border-b-2 ${
-                rightTab === t.id ? "text-white border-purple-500 bg-purple-500/5" : "text-gray-500 border-transparent hover:text-gray-300"
+              className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-[11px] font-bold uppercase tracking-widest transition-all border-b-2 ${
+                rightTab === t.id ? "text-white border-[#6366F1] bg-[#6366F1]/5" : "text-[#94A3B8] border-transparent hover:text-white"
               }`}>
-              <TIcon className="w-3.5 h-3.5" />{t.label}
+              <TIcon className="w-4 h-4" />{t.label}
             </button>
           );
         })}
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
         {/* ─── OVERVIEW TAB ─── */}
         {rightTab === "overview" && systemInsights ? (
-          <div className="p-5 space-y-5">
+          <div className="p-6 space-y-6">
             {/* Score ring */}
             {systemInsights.score != null && (
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-gray-900/40 border border-gray-800/50">
+              <div className="flex items-center gap-4 p-5 rounded-2xl bg-[#0F172A] border border-[#1E293B]">
                 <div className="relative w-16 h-16 shrink-0">
                   <svg className="w-full h-full -rotate-90" viewBox="0 0 64 64">
-                    <circle cx="32" cy="32" r="26" fill="transparent" stroke="#1f2937" strokeWidth="5" />
-                    <circle cx="32" cy="32" r="26" fill="transparent" stroke="url(#archScoreGrad)" strokeWidth="5"
+                    <circle cx="32" cy="32" r="26" fill="transparent" stroke="#1E293B" strokeWidth="5" />
+                    <circle cx="32" cy="32" r="26" fill="transparent" stroke="currentColor" strokeWidth="5"
                       strokeDasharray="163.4" strokeLinecap="round"
                       strokeDashoffset={163.4 - (163.4 * (systemInsights.score || 0)) / 100}
-                      className="transition-all duration-1000" />
-                    <defs>
-                      <linearGradient id="archScoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#7c3aed" />
-                        <stop offset="100%" stopColor="#3b82f6" />
-                      </linearGradient>
-                    </defs>
+                      className="text-[#6366F1] transition-all duration-1000" />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className={`text-lg font-bold ${scoreColor}`}>{systemInsights.score}</span>
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-white mb-1">Architecture Score</p>
-                  <p className="text-[10px] text-gray-500 leading-relaxed">
-                    {(systemInsights.score ?? 0) >= 80 ? "Strong design with solid component choices." : (systemInsights.score ?? 0) >= 60 ? "Good foundation — room for scaling improvements." : "Needs more depth in component selection and failure handling."}
+                  <p className="text-[12px] font-bold text-white mb-1 uppercase tracking-tight">Architecture Score</p>
+                  <p className="text-[10px] text-[#94A3B8] leading-relaxed font-medium">
+                    {(systemInsights.score ?? 0) >= 80 ? "Strong design with solid component choices." : (systemInsights.score ?? 0) >= 60 ? "Good foundation — room for scaling." : "Needs more depth in component selection."}
                   </p>
                 </div>
               </div>
@@ -263,21 +258,21 @@ function ArchitectureInner() {
             {/* Summary */}
             {systemInsights.summary && (
               <div>
-                <h3 className="text-[11px] uppercase tracking-[0.15em] text-gray-500 font-semibold mb-2">Summary</h3>
-                <p className="text-[13px] text-gray-300 leading-relaxed">{systemInsights.summary}</p>
+                <h3 className="text-[10px] uppercase tracking-widest text-[#94A3B8] font-bold mb-3">System Summary</h3>
+                <p className="text-[13px] text-[#E2E8F0] leading-relaxed p-4 rounded-2xl bg-[#0F172A] border border-[#1E293B]">{systemInsights.summary}</p>
               </div>
             )}
 
             {/* Bottlenecks */}
             {systemInsights.bottlenecks?.length > 0 && (
-              <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/10">
-                <div className="flex items-center gap-2 mb-3">
+              <div className="p-5 rounded-2xl bg-red-500/5 border border-red-500/10">
+                <div className="flex items-center gap-2 mb-4">
                   <AlertTriangle className="w-4 h-4 text-red-400" />
-                  <h3 className="text-red-400 font-semibold text-xs">Bottlenecks</h3>
+                  <h3 className="text-red-400 font-bold text-[10px] uppercase tracking-widest">Bottlenecks</h3>
                 </div>
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {systemInsights.bottlenecks.map((b: string, i: number) => (
-                    <li key={i} className="text-[12px] text-gray-400 pl-3 border-l-2 border-red-500/30 py-0.5 leading-relaxed">{b}</li>
+                    <li key={i} className="text-[12px] text-[#94A3B8] pl-3 border-l-2 border-red-500/30 py-0.5 leading-relaxed font-medium">{b}</li>
                   ))}
                 </ul>
               </div>
@@ -285,14 +280,14 @@ function ArchitectureInner() {
 
             {/* Tradeoffs */}
             {systemInsights.tradeoffs?.length > 0 && (
-              <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10">
-                <div className="flex items-center gap-2 mb-3">
-                  <ArrowLeftRight className="w-4 h-4 text-blue-400" />
-                  <h3 className="text-blue-400 font-semibold text-xs">Tradeoffs</h3>
+              <div className="p-5 rounded-2xl bg-[#0F172A] border border-[#1E293B]">
+                <div className="flex items-center gap-2 mb-4">
+                  <ArrowLeftRight className="w-4 h-4 text-[#94A3B8]" />
+                  <h3 className="text-[#94A3B8] font-bold text-[10px] uppercase tracking-widest">Tradeoffs</h3>
                 </div>
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {systemInsights.tradeoffs.map((t: string, i: number) => (
-                    <li key={i} className="text-[12px] text-gray-400 pl-3 border-l-2 border-blue-500/30 py-0.5 leading-relaxed">{t}</li>
+                    <li key={i} className="text-[12px] text-[#94A3B8] pl-3 border-l-2 border-[#1E293B] py-0.5 leading-relaxed font-medium">{t}</li>
                   ))}
                 </ul>
               </div>
@@ -300,44 +295,44 @@ function ArchitectureInner() {
 
             {/* Scaling */}
             {systemInsights.scalingRecommendations?.length > 0 && (
-              <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                <div className="flex items-center gap-2 mb-3">
+              <div className="p-5 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
+                <div className="flex items-center gap-2 mb-4">
                   <TrendingUp className="w-4 h-4 text-emerald-400" />
-                  <h3 className="text-emerald-400 font-semibold text-xs">Scaling Recommendations</h3>
+                  <h3 className="text-emerald-400 font-bold text-[10px] uppercase tracking-widest">Scaling</h3>
                 </div>
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {systemInsights.scalingRecommendations.map((r: string, i: number) => (
-                    <li key={i} className="text-[12px] text-gray-400 pl-3 border-l-2 border-emerald-500/30 py-0.5 leading-relaxed">{r}</li>
+                    <li key={i} className="text-[12px] text-[#94A3B8] pl-3 border-l-2 border-emerald-500/30 py-0.5 leading-relaxed font-medium">{r}</li>
                   ))}
                 </ul>
               </div>
             )}
-
-            <p className="text-gray-600 text-[10px] italic pt-2">Click any node to inspect its role and scaling behavior.</p>
+            
+            <p className="text-[#94A3B8]/40 text-[10px] italic font-bold text-center">Click nodes on the canvas to inspect</p>
           </div>
         ) : rightTab === "overview" ? (
           <div className="h-full flex items-center justify-center p-6">
-            <p className="text-gray-600 text-sm text-center">No system analysis available yet.</p>
+            <p className="text-[#94A3B8] text-sm text-center font-bold">No system analysis available yet.</p>
           </div>
         ) : null}
 
         {/* ─── INSPECTOR TAB ─── */}
         {rightTab === "inspector" && selectedNode ? (
-          <div className="p-5">
-            <div className="flex items-center gap-3 mb-4">
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-6">
               {(() => {
                 const cfg = nodeTypeConfig[selectedNode.data?.type as keyof typeof nodeTypeConfig] ?? nodeTypeConfig.service;
                 const NIcon = cfg.icon;
                 return (
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${cfg.bg} border ${cfg.border}`}>
-                    <NIcon className={`w-5 h-5 ${cfg.color}`} />
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${cfg.bg} border ${cfg.border} shadow-lg shadow-[#070B14]`}>
+                    <NIcon className={`w-6 h-6 ${cfg.color}`} />
                   </div>
                 );
               })()}
               <div>
-                <h2 className="text-lg font-bold">{selectedNode.data?.label}</h2>
+                <h2 className="text-xl font-bold text-white">{selectedNode.data?.label}</h2>
                 {selectedNode.data?.type && (
-                  <span className={`text-[10px] font-semibold uppercase tracking-wider ${(nodeTypeConfig[selectedNode.data.type as keyof typeof nodeTypeConfig] ?? nodeTypeConfig.service).color} opacity-70`}>
+                  <span className={`text-[10px] font-bold uppercase tracking-widest ${(nodeTypeConfig[selectedNode.data.type as keyof typeof nodeTypeConfig] ?? nodeTypeConfig.service).color} opacity-80`}>
                     {selectedNode.data.type}
                   </span>
                 )}
@@ -345,30 +340,31 @@ function ArchitectureInner() {
             </div>
 
             {selectedNode.data?.description && (
-              <p className="text-[12px] text-gray-400 mb-5 leading-relaxed p-3 rounded-xl bg-gray-900/40 border border-gray-800/50">{selectedNode.data.description}</p>
+              <p className="text-[13px] text-[#94A3B8] mb-6 leading-relaxed p-4 rounded-2xl bg-[#0F172A] border border-[#1E293B] font-medium">{selectedNode.data.description}</p>
             )}
 
             {explanationLoading ? (
-              <div className="flex items-center gap-3 text-gray-500 text-sm py-8 justify-center">
-                <Loader2 className="w-4 h-4 animate-spin text-purple-500" />Analyzing component...
+              <div className="flex flex-col items-center gap-4 text-[#94A3B8] text-sm py-12 justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-[#6366F1]" />
+                <span className="font-bold uppercase tracking-widest text-[10px]">Analyzing Component...</span>
               </div>
             ) : nodeExplanation ? (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {[
                   { title: "Role", content: nodeExplanation.role, type: "text" },
                   { title: "Responsibilities", content: nodeExplanation.responsibilities, type: "list" },
                   { title: "Scaling Notes", content: nodeExplanation.scalingNotes, type: "list" },
                   { title: "Failure Risks", content: nodeExplanation.failureRisks, type: "list" },
                 ].map((section) => (
-                  <div key={section.title} className="p-3 rounded-xl bg-gray-900/30 border border-gray-800/40">
-                    <h3 className="text-white font-semibold text-[11px] uppercase tracking-wider mb-2">{section.title}</h3>
+                  <div key={section.title} className="p-4 rounded-2xl bg-[#0F172A] border border-[#1E293B]">
+                    <h3 className="text-[#6366F1] font-bold text-[10px] uppercase tracking-widest mb-3">{section.title}</h3>
                     {section.type === "text" ? (
-                      <p className="text-[12px] text-gray-400 leading-relaxed">{section.content}</p>
+                      <p className="text-[13px] text-[#E2E8F0] leading-relaxed font-medium">{section.content}</p>
                     ) : (
-                      <ul className="space-y-1.5">
+                      <ul className="space-y-2">
                         {(section.content as string[])?.map((item: string, i: number) => (
-                          <li key={i} className="text-[12px] text-gray-400 flex items-start gap-2">
-                            <span className="text-purple-500 mt-1 shrink-0">•</span>{item}
+                          <li key={i} className="text-[12px] text-[#94A3B8] flex items-start gap-2 font-medium">
+                            <span className="text-[#6366F1] mt-1 shrink-0">•</span>{item}
                           </li>
                         ))}
                       </ul>
@@ -380,11 +376,11 @@ function ArchitectureInner() {
           </div>
         ) : rightTab === "inspector" ? (
           <div className="h-full flex flex-col items-center justify-center p-6 text-center">
-            <div className="w-12 h-12 rounded-xl bg-gray-800/50 border border-gray-700/50 flex items-center justify-center mb-3">
-              <Info className="w-5 h-5 text-gray-600" />
+            <div className="w-16 h-16 rounded-2xl bg-[#0F172A] border border-[#1E293B] flex items-center justify-center mb-4">
+              <Info className="w-6 h-6 text-[#1E293B]" />
             </div>
-            <p className="text-gray-500 text-sm font-medium mb-1">No Component Selected</p>
-            <p className="text-gray-600 text-xs">Click a node on the canvas to inspect it.</p>
+            <p className="text-[#94A3B8] text-sm font-bold mb-1 uppercase tracking-widest">No Component Selected</p>
+            <p className="text-[#94A3B8]/40 text-xs font-bold">Select a node to inspect its behavior.</p>
           </div>
         ) : null}
       </div>
@@ -392,67 +388,67 @@ function ArchitectureInner() {
   );
 
   return (
-    <div className="h-screen flex flex-col bg-[#020617] text-white overflow-hidden">
+    <div className="h-screen flex flex-col bg-[#070B14] text-white overflow-hidden">
       <Navbar />
 
       {/* ─── Sub-header ─── */}
-      <div className="px-6 py-3 border-b border-gray-800/50 bg-black/60 backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 z-10">
+      <div className="px-6 py-4 border-b border-[#1E293B] bg-[#070B14]/50 backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 z-10">
         <div className="flex flex-col">
-          <div className="flex items-center gap-2 text-[11px] text-gray-500 mb-1 font-medium tracking-wide">
-            <a href="/problems" className="hover:text-white transition">Problems</a>
+          <div className="flex items-center gap-2 text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest mb-1.5">
+            <a href="/problems" className="hover:text-white transition">Challenges</a>
             <ChevronRight className="w-3 h-3" />
-            <a href={`/interview/${problemId}`} className="hover:text-white transition">{problem}</a>
+            <a href={`/interview/${problemId}`} className="hover:text-white transition truncate max-w-[150px]">{problem}</a>
             <ChevronRight className="w-3 h-3" />
-            <span className="text-purple-400">Architecture</span>
+            <span className="text-[#6366F1]">Architecture</span>
           </div>
           <div className="flex items-center gap-3">
-            <h1 className="text-lg font-semibold text-white">{problem}</h1>
+            <h1 className="text-xl font-bold text-white">{problem}</h1>
             {systemInsights?.isFallback && (
-              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">FALLBACK</span>
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">FALLBACK MODE</span>
             )}
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-3">
           <SaveButton problemId={problemId} />
           {systemInsights?.score != null && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gray-900/60 border border-gray-800/50">
-              <BarChart3 className="w-3.5 h-3.5 text-gray-500" />
-              <span className="text-xs text-gray-400">Score</span>
+            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#0F172A] border border-[#1E293B]">
+              <BarChart3 className="w-4 h-4 text-[#94A3B8]" />
+              <span className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest">Design</span>
               <span className={`text-sm font-bold ${scoreColor}`}>{systemInsights.score}</span>
-              <span className="text-[10px] text-gray-600">/100</span>
+              <span className="text-[10px] text-[#94A3B8] opacity-40">/100</span>
             </div>
           )}
           <button onClick={handleExportPNG} disabled={exporting || loading}
-            className="px-3 py-2 rounded-xl bg-gray-900/60 border border-gray-800/50 hover:border-gray-600 text-gray-400 hover:text-white text-xs font-medium transition-all flex items-center gap-1.5 disabled:opacity-40">
-            <Download className="w-3.5 h-3.5" />{exporting ? "..." : "PNG"}
+            className="px-4 py-2 rounded-xl bg-[#0F172A] border border-[#1E293B] hover:border-[#94A3B8]/20 text-[#94A3B8] hover:text-white text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 disabled:opacity-40">
+            <Download className="w-4 h-4" />{exporting ? "..." : "PNG"}
           </button>
           <button onClick={handleGenerateReview} disabled={reviewLoading}
-            className="px-5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold text-sm transition-all shadow-lg hover:shadow-purple-500/25 disabled:opacity-60 flex items-center gap-2">
-            {reviewLoading ? <><Loader2 className="w-4 h-4 animate-spin" />Generating...</> : <>Finish & Review<ChevronRight className="w-4 h-4" /></>}
+            className="px-6 py-2 rounded-xl bg-[#6366F1] hover:bg-[#818CF8] text-white font-bold text-sm transition-all shadow-lg shadow-[#6366F1]/20 disabled:opacity-60 flex items-center gap-2">
+            {reviewLoading ? <><Loader2 className="w-4 h-4 animate-spin" />Finalizing...</> : <>Review Design<ChevronRight className="w-4 h-4" /></>}
           </button>
         </div>
       </div>
 
       {/* ─── Main ─── */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden bg-[#070B14]">
 
         {/* ─── Canvas ─── */}
-        <div className="w-full lg:flex-1 h-[55vh] lg:h-auto min-h-[55vh] lg:min-h-0 relative shrink-0 border-b lg:border-b-0 border-gray-800/50" ref={flowRef}>
+        <div className="w-full lg:flex-1 h-[55vh] lg:h-auto min-h-[55vh] lg:min-h-0 relative shrink-0 border-b lg:border-b-0 border-[#1E293B]" ref={flowRef}>
           {loading ? (
-            <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-4">
+            <div className="h-full flex flex-col items-center justify-center text-[#94A3B8] space-y-4">
               <div className="relative">
-                <div className="animate-spin rounded-full h-10 w-10 border-2 border-purple-500/20 border-t-purple-500" />
-                <Sparkles className="w-4 h-4 text-purple-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#6366F1]/20 border-t-[#6366F1]" />
+                <Sparkles className="w-4 h-4 text-[#6366F1] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
               </div>
-              <p className="text-sm font-medium">Loading architecture...</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest">Rendering System Architecture...</p>
             </div>
           ) : error ? (
             <div className="h-full flex flex-col items-center justify-center gap-4">
               <div className="text-red-400 text-center max-w-md p-6 border border-red-500/20 bg-red-500/5 rounded-2xl">
-                <p className="font-semibold mb-2">Generation Failed</p>
-                <p className="text-sm text-gray-400">{error}</p>
+                <p className="font-bold mb-2">Generation Failed</p>
+                <p className="text-xs text-[#94A3B8]">{error}</p>
               </div>
-              <button onClick={loadFromSession} className="px-6 py-2 bg-white text-black font-medium rounded-xl hover:bg-gray-200 transition">Retry</button>
+              <button onClick={loadFromSession} className="px-6 py-2 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition uppercase text-xs tracking-widest">Retry</button>
             </div>
           ) : (
             <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes}
@@ -463,27 +459,27 @@ function ArchitectureInner() {
               minZoom={0.3} maxZoom={2}
               defaultEdgeOptions={{ type: "default", animated: true }}
             >
-              <Background color="#1e293b" gap={28} size={1} />
-              <Controls className="!bg-gray-900/90 !border-gray-700/50 !rounded-xl !shadow-xl" showInteractive={false} />
-              <MiniMap nodeColor={() => "#334155"} maskColor="rgba(2, 6, 23, 0.85)" className="!bg-gray-900/90 !border-gray-700/50 !rounded-xl !shadow-xl" style={{ width: 140, height: 90 }} />
+              <Background color="#1E293B" gap={32} size={1} />
+              <Controls className="!bg-[#0F172A] !border-[#1E293B] !rounded-xl !shadow-2xl" showInteractive={false} />
+              <MiniMap nodeColor={() => "#1E293B"} maskColor="rgba(7, 11, 20, 0.9)" className="!bg-[#0F172A] !border-[#1E293B] !rounded-xl !shadow-2xl" style={{ width: 140, height: 90 }} />
 
               {/* ─── Floating style selector ─── */}
               <Panel position="top-left">
-                <div className="flex flex-wrap gap-1.5 p-1.5 bg-gray-900/90 backdrop-blur-xl border border-gray-700/50 rounded-xl shadow-xl max-w-[280px] sm:max-w-none">
+                <div className="flex flex-wrap gap-1.5 p-1.5 bg-[#0F172A]/90 backdrop-blur-xl border border-[#1E293B] rounded-2xl shadow-2xl max-w-[280px] sm:max-w-none">
                   {ARCH_STYLES.map((s) => {
                     const SIcon = s.icon;
                     const active = archStyle === s.id;
                     return (
                       <button key={s.id} onClick={() => setArchStyle(s.id)} title={s.desc}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
-                          active ? "bg-purple-600/30 text-purple-300 border border-purple-500/30" : "text-gray-500 hover:text-gray-300 border border-transparent hover:bg-gray-800/50"
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
+                          active ? "bg-[#6366F1]/10 text-[#6366F1] border border-[#6366F1]/20 shadow-lg shadow-[#6366F1]/10" : "text-[#94A3B8] border border-transparent hover:bg-[#1E293B]"
                         }`}>
                         <SIcon className="w-3.5 h-3.5" />{s.label}
                       </button>
                     );
                   })}
                   <button onClick={handleRegenerate} disabled={regenerating}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-gradient-to-r from-purple-600/20 to-blue-600/20 text-purple-300 border border-purple-500/20 hover:border-purple-500/40 transition-all disabled:opacity-50">
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest bg-gradient-to-r from-[#6366F1]/10 to-[#6366F1]/5 text-[#6366F1] border border-[#6366F1]/20 hover:border-[#6366F1]/40 transition-all disabled:opacity-50">
                     <RefreshCw className={`w-3.5 h-3.5 ${regenerating ? "animate-spin" : ""}`} />{regenerating ? "..." : "Regenerate"}
                   </button>
                 </div>
@@ -491,7 +487,7 @@ function ArchitectureInner() {
 
               {/* ─── Node count ─── */}
               <Panel position="bottom-left">
-                <div className="px-3 py-1.5 bg-gray-900/80 backdrop-blur-xl border border-gray-700/50 rounded-lg text-[10px] text-gray-500 font-medium">
+                <div className="px-3 py-1.5 bg-[#0F172A]/80 backdrop-blur-xl border border-[#1E293B] rounded-lg text-[9px] text-[#94A3B8] font-bold uppercase tracking-widest">
                   {nodes.length} nodes · {edges.length} edges
                 </div>
               </Panel>
@@ -500,25 +496,25 @@ function ArchitectureInner() {
         </div>
 
         {/* ─── Desktop Right Panel ─── */}
-        <aside className="hidden lg:flex w-[380px] shrink-0 bg-[#020617] flex-col border-l border-gray-800/50 overflow-hidden">
+        <aside className="hidden lg:flex w-[380px] shrink-0 bg-[#070B14] flex-col border-l border-[#1E293B] overflow-hidden">
           {renderSidebarContent()}
         </aside>
 
         {/* ─── Mobile Bottom Sheet ─── */}
-        <div className={`lg:hidden fixed bottom-0 left-0 right-0 rounded-t-2xl bg-[#020617]/90 backdrop-blur-xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-50 border-t border-gray-800/50 transition-all duration-300 flex flex-col ${
-          sheetState === "peek" ? "h-[60px]" : sheetState === "half" ? "h-[40vh]" : "h-[80vh]"
+        <div className={`lg:hidden fixed bottom-0 left-0 right-0 rounded-t-3xl bg-[#070B14]/95 backdrop-blur-xl shadow-[0_-10px_40px_rgba(0,0,0,0.8)] z-50 border-t border-[#1E293B] transition-all duration-300 flex flex-col ${
+          sheetState === "peek" ? "h-[64px]" : sheetState === "half" ? "h-[45vh]" : "h-[85vh]"
         }`}>
           {/* Drag Handle */}
           <div 
-            className="w-full flex justify-center py-3 shrink-0 cursor-pointer" 
+            className="w-full flex justify-center py-4 shrink-0 cursor-pointer" 
             onClick={() => setSheetState(s => s === "peek" ? "half" : s === "half" ? "full" : "peek")}
           >
-            <div className="w-12 h-1.5 bg-gray-600 rounded-full" />
+            <div className="w-12 h-1.5 bg-[#1E293B] rounded-full" />
           </div>
           
           {sheetState === "peek" ? (
-            <div className="px-5 text-center text-gray-400 font-semibold text-sm cursor-pointer" onClick={() => setSheetState("half")}>
-              System Analysis
+            <div className="px-5 text-center text-[#94A3B8] font-bold text-[11px] uppercase tracking-widest cursor-pointer" onClick={() => setSheetState("half")}>
+              System Details & Analysis
             </div>
           ) : (
             <div className="flex-1 overflow-hidden flex flex-col">

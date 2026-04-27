@@ -22,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
-      <body className="min-h-full flex flex-col font-[family-name:var(--font-inter)] overflow-x-hidden" suppressHydrationWarning>
+      <body className="min-h-full flex flex-col font-[family-name:var(--font-inter)] overflow-x-hidden bg-[#070B14]" suppressHydrationWarning>
         <AuthProvider>
           <Navbar />
           {children}

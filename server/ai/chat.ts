@@ -74,20 +74,27 @@ Step mapping:
 ${problemContext}${weaknessContext}
 
 Rules:
-- Ask exactly ONE focused question.
-- Keep the reply concise.
-- Challenge vague answers.
-- Advance only when the answer is sufficiently complete.
-- Scores must reflect the user's latest answer.
+- Ask exactly ONE question only.
+- CONSTRAINTS: Your question MUST BE 12 WORDS OR LESS. This is non-negotiable.
+- No explanations, no teaching, no hints, no step mention.
+- If answer is weak or vague, ask a sharper follow-up and do not advance.
+- If answer is strong, advance to next step.
+- Score latest user answer only.
+
+Scoring rules:
+- Clarity: structure and specificity (0-10).
+- Depth: tradeoffs, scaling, constraints (0-10).
+- Correctness: technical validity (0-10).
+- Multi-Metric Engine: Use specific rubric. Mentioning CDN or caching increases depth. Tradeoffs increase depth. Clear sequencing increases clarity. Incorrect concepts lower correctness.
 
 Return ONLY valid JSON:
 {
-  "reply": "next question or follow-up",
-  "feedback": "brief feedback on the user's last answer",
+  "reply": "next question or sharper follow-up (<= 12 words)",
+  "feedback": "one sentence: good + improve",
   "scores": {
-    "clarity": 1,
-    "depth": 1,
-    "correctness": 1
+    "clarity": 0,
+    "depth": 0,
+    "correctness": 0
   },
   "shouldAdvance": false,
   "reason": "why the user should or should not advance",
@@ -103,17 +110,16 @@ function buildInitialPrompt(problem: string, problemId?: string): string {
 Problem: ${problem}
 ${problemContext}
 
-Your task: Open the interview with a clear, engaging introduction followed by the first question about functional requirements.
+Your task: ask the first requirements question.
 
 Rules:
-- Welcome the candidate and briefly set the stage.
-- Ask exactly ONE opening question about the core functional requirements.
-- Keep the reply concise and professional.
-- Do NOT ask multiple questions.
+- Ask exactly ONE question.
+- Max 12 words.
+- No intro, no explanation, no hints.
 
 Return ONLY valid JSON:
 {
-  "reply": "your opening message and first question",
+  "reply": "first question",
   "feedback": "",
   "scores": { "clarity": 0, "depth": 0, "correctness": 0 },
   "shouldAdvance": false,

@@ -14,7 +14,14 @@ interface AuthModalProps {
   description?: string;
 }
 
-export default function AuthModal({ open, onClose, onSuccess, initialMode = "signin", title, description }: AuthModalProps) {
+export default function AuthModal({
+  open,
+  onClose,
+  onSuccess,
+  initialMode = "signin",
+  title,
+  description,
+}: AuthModalProps) {
   const { signIn, signUp } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">(initialMode);
   const [email, setEmail] = useState("");
@@ -62,89 +69,91 @@ export default function AuthModal({ open, onClose, onSuccess, initialMode = "sig
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/80 backdrop-blur-md"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-md mx-4 bg-[#0a0f1e] border border-gray-800 rounded-3xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-md bg-[#070B14] border border-[#1E293B] rounded-[32px] shadow-2xl overflow-hidden">
         {/* Glow accent */}
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-blue-500" />
+        <div className="absolute top-0 left-0 w-full h-1 bg-[#6366F1]" />
 
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-white transition p-1"
+          className="absolute top-6 right-6 text-[#94A3B8] hover:text-white transition p-2 hover:bg-[#1E293B] rounded-xl"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="p-8 pt-10">
+        <div className="p-8 md:p-10 pt-12">
           {/* Header */}
-          <h2 className="text-2xl font-bold text-white mb-1">
-            {title ? title : (mode === "signin" ? "Welcome back" : "Create an account")}
+          <h2 className="text-3xl font-bold text-white mb-2">
+            {title || (mode === "signin" ? "Welcome back" : "Create Account")}
           </h2>
-          <p className="text-gray-400 text-sm mb-8">
-            {description ? description : (mode === "signin"
-              ? "Sign in to save and restore your interview sessions."
-              : "Create an account to start saving your progress.")}
+          <p className="text-[#94A3B8] text-[13px] font-medium mb-8">
+            {description || (mode === "signin"
+              ? "Access your saved interview sessions and history."
+              : "Start saving your progress and architectural designs.")}
           </p>
 
           {/* Tabs */}
-          <div className="flex gap-1 p-1 bg-gray-900/60 rounded-xl mb-6">
+          <div className="flex gap-1 p-1.5 bg-[#0F172A] border border-[#1E293B] rounded-2xl mb-8">
             <button
               onClick={() => { setMode("signin"); setError(null); setSuccessMessage(null); }}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition ${
+              className={`flex-1 py-2.5 text-[11px] font-bold uppercase tracking-widest rounded-xl transition ${
                 mode === "signin"
-                  ? "bg-gray-800 text-white shadow"
-                  : "text-gray-500 hover:text-gray-300"
+                  ? "bg-[#1E293B] text-white shadow-lg"
+                  : "text-[#94A3B8] hover:text-white"
               }`}
             >
               Sign In
             </button>
             <button
               onClick={() => { setMode("signup"); setError(null); setSuccessMessage(null); }}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition ${
+              className={`flex-1 py-2.5 text-[11px] font-bold uppercase tracking-widest rounded-xl transition ${
                 mode === "signup"
-                  ? "bg-gray-800 text-white shadow"
-                  : "text-gray-500 hover:text-gray-300"
+                  ? "bg-[#1E293B] text-white shadow-lg"
+                  : "text-[#94A3B8] hover:text-white"
               }`}
             >
-              Create Account
+              Sign Up
             </button>
           </div>
 
           {/* Alerts */}
           {error && (
-            <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+            <div className="mb-6 p-4 rounded-2xl bg-red-500/5 border border-red-500/10 text-red-400 text-[12px] font-bold flex items-center gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
               {error}
             </div>
           )}
           {successMessage && (
-            <div className="mb-4 p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
+            <div className="mb-6 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 text-emerald-400 text-[12px] font-bold flex items-center gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
               {successMessage}
             </div>
           )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <div className="relative group">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8] group-focus-within:text-[#6366F1] transition-colors" />
               <input
                 type="email"
                 required
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 rounded-xl bg-gray-900/60 border border-gray-800/60 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition"
+                className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-[#0F172A] border border-[#1E293B] text-white text-sm placeholder-[#334155] focus:outline-none focus:border-[#6366F1]/50 transition-all font-medium"
               />
             </div>
 
-            <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <div className="relative group">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8] group-focus-within:text-[#6366F1] transition-colors" />
               <input
                 type={showPassword ? "text" : "password"}
                 required
@@ -152,12 +161,12 @@ export default function AuthModal({ open, onClose, onSuccess, initialMode = "sig
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-11 pr-11 py-3 rounded-xl bg-gray-900/60 border border-gray-800/60 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition"
+                className="w-full pl-12 pr-12 py-3.5 rounded-2xl bg-[#0F172A] border border-[#1E293B] text-white text-sm placeholder-[#334155] focus:outline-none focus:border-[#6366F1]/50 transition-all font-medium"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-white transition"
               >
                 {showPassword ? (
                   <EyeOff className="w-4 h-4" />
@@ -170,31 +179,30 @@ export default function AuthModal({ open, onClose, onSuccess, initialMode = "sig
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold text-sm transition-all shadow-lg hover:shadow-purple-500/25 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-4 rounded-2xl bg-[#6366F1] hover:bg-[#818CF8] text-white font-bold text-[13px] uppercase tracking-widest transition-all shadow-lg shadow-[#6366F1]/20 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4"
             >
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  {mode === "signin" ? "Signing in..." : "Creating account..."}
+                  Processing...
                 </>
               ) : mode === "signin" ? (
-                "Sign In"
+                "Continue to Dashboard"
               ) : (
-                "Create Account"
+                "Create Master Account"
               )}
             </button>
           </form>
 
           {/* Switch */}
-          <p className="text-center text-gray-500 text-sm mt-6">
-            {mode === "signin" ? "Don't have an account?" : "Already have an account?"}{" "}
+          <div className="mt-8 text-center">
             <button
               onClick={switchMode}
-              className="text-purple-400 hover:text-purple-300 font-medium transition"
+              className="text-[#94A3B8] hover:text-white text-[12px] font-bold uppercase tracking-widest transition-all"
             >
-              {mode === "signin" ? "Sign up" : "Sign in"}
+              {mode === "signin" ? "Need an account?" : "Back to Sign In"}
             </button>
-          </p>
+          </div>
         </div>
       </div>
     </div>

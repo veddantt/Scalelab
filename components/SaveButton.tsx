@@ -87,25 +87,25 @@ export default function SaveButton({ problemId }: SaveButtonProps) {
       icon: Save,
       text: "Save",
       className:
-        "bg-gray-900/60 border-gray-800/50 hover:border-purple-500/30 text-gray-400 hover:text-white",
+        "bg-[#0F172A] border-[#1E293B] hover:border-[#6366F1]/40 text-[#94A3B8] hover:text-white uppercase tracking-widest font-bold",
     },
     saving: {
       icon: Loader2,
       text: "Saving...",
       className:
-        "bg-gray-900/60 border-gray-800/50 text-gray-400 cursor-wait",
+        "bg-[#0F172A] border-[#1E293B] text-[#94A3B8] cursor-wait uppercase tracking-widest font-bold",
     },
     saved: {
       icon: Check,
       text: "Saved!",
       className:
-        "bg-green-500/10 border-green-500/20 text-green-400",
+        "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 uppercase tracking-widest font-bold",
     },
     error: {
       icon: AlertCircle,
       text: "Failed",
       className:
-        "bg-red-500/10 border-red-500/20 text-red-400",
+        "bg-red-500/10 border-red-500/20 text-red-400 uppercase tracking-widest font-bold",
     },
   };
 
@@ -117,10 +117,10 @@ export default function SaveButton({ problemId }: SaveButtonProps) {
       <button
         onClick={handleClick}
         disabled={state === "saving"}
-        className={`flex items-center gap-1.5 px-4 py-2 rounded-xl border text-[13px] font-medium transition-all ${config.className}`}
+        className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[11px] transition-all ${config.className}`}
       >
         <Icon
-          className={`w-3.5 h-3.5 ${state === "saving" ? "animate-spin" : ""}`}
+          className={`w-4 h-4 ${state === "saving" ? "animate-spin" : ""}`}
         />
         {config.text}
       </button>
@@ -129,8 +129,6 @@ export default function SaveButton({ problemId }: SaveButtonProps) {
         open={authOpen}
         onClose={() => setAuthOpen(false)}
         onSuccess={handleAuthSuccess}
-        title="Save your session?"
-        description="Sign in to keep your progress and revisit this design later."
       />
     </>
   );

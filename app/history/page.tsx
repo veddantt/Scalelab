@@ -304,7 +304,7 @@ export default function HistoryPage() {
                         </span>
                       </div>
                       {s.attempt_number > 1 && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#6366F1]/10 text-blue-400 border border-[#6366F1]/20">
                           Attempt {s.attempt_number}
                         </span>
                       )}

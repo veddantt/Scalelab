@@ -4,25 +4,24 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { GitMerge, RefreshCw, FileText, HelpCircle, Loader2, ChevronRight } from "lucide-react";
+import { GitMerge, RefreshCw, FileText, HelpCircle, Loader2, ChevronRight, Star, Target, Zap, Layout, BarChart3, CheckCircle2 } from "lucide-react";
 
-import { getProblem } from "@/lib/scenarios";
+import { getProblemMeta } from "@/lib/problems";
 import { getSession, saveSession, ScaleLabSession } from "@/lib/sessionStorage";
-
-import Navbar from "@/components/Navbar";
 import SaveButton from "@/components/SaveButton";
 import ModelAnswerCard from "@/components/ModelAnswerCard";
 import type { ModelAnswer } from "@/lib/sessionStorage";
+import { motion, AnimatePresence } from "framer-motion";
 
-function CollapsibleSection({ title, children, defaultOpen = false, className = "bg-gray-900/40 border border-gray-800/50" }: { title: React.ReactNode, children: React.ReactNode, defaultOpen?: boolean, className?: string }) {
+function CollapsibleSection({ title, children, defaultOpen = false, className = "bg-[#0F172A] border border-[#1E293B]" }: { title: React.ReactNode, children: React.ReactNode, defaultOpen?: boolean, className?: string }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   return (
-    <div className={`p-5 lg:p-6 rounded-3xl ${className}`}>
+    <div className={`p-6 rounded-3xl ${className}`}>
       <button onClick={() => setIsOpen(!isOpen)} className="w-full flex items-center justify-between text-left focus:outline-none lg:pointer-events-none">
         {title}
-        <ChevronRight className={`w-5 h-5 text-gray-500 lg:hidden transition-transform duration-300 ${isOpen ? "rotate-90" : ""}`} />
+        <ChevronRight className={`w-5 h-5 text-[#94A3B8] lg:hidden transition-transform duration-300 ${isOpen ? "rotate-90" : ""}`} />
       </button>
-      <div className={`overflow-hidden transition-all duration-500 lg:max-h-none lg:opacity-100 lg:mt-4 ${isOpen ? "max-h-[2500px] opacity-100 mt-4" : "max-h-0 opacity-0"}`}>
+      <div className={`overflow-hidden transition-all duration-500 lg:max-h-none lg:opacity-100 lg:mt-6 ${isOpen ? "max-h-[2500px] opacity-100 mt-6" : "max-h-0 opacity-0"}`}>
         {children}
       </div>
     </div>
@@ -33,7 +32,8 @@ export default function ReviewPage() {
     const params = useParams();
     const router = useRouter();
     const problemId = params.id as string;
-    const scenario = getProblem(problemId);
+    const meta = getProblemMeta(problemId);
+    const scenario = meta?.problem;
     const problem = scenario?.title;
 
     const [review, setReview] = useState<any>(null);
@@ -139,7 +139,6 @@ export default function ReviewPage() {
         loadReview();
     }, [problemId]);
 
-    // Separately load cached model answer from session
     useEffect(() => {
         const session = getSession(problemId);
         if (session?.modelAnswer) {
@@ -179,187 +178,141 @@ export default function ReviewPage() {
         router.push(`/interview/${problemId}`);
     };
 
-    const handleExport = () => {
-        window.print();
-    };
-
-    if (!scenario) {
-        return (
-            <div className="min-h-screen flex flex-col bg-black text-white">
-                <Navbar />
-                <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-                    <h1 className="text-3xl font-bold mb-4">Problem Not Found</h1>
-                    <p className="text-gray-400 mb-8">The scenario you are looking for does not exist.</p>
-                    <a href="/problems" className="px-6 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl font-medium transition">
-                        Browse Problems
-                    </a>
-                </div>
-            </div>
-        );
-    }
+    if (!scenario) return <div className="h-screen bg-[#070B14] text-white flex items-center justify-center">Problem not found</div>;
 
     if (noReview) {
         return (
-            <div className="min-h-screen flex flex-col bg-black text-white">
-                <Navbar />
-                <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-                    <h1 className="text-3xl font-bold mb-4">No review available yet</h1>
-                    <p className="text-gray-400 mb-8">You need to complete the architecture step first.</p>
-                    <a href={`/architecture/${problemId}`} className="px-6 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl font-medium transition">
-                        Generate Architecture First
-                    </a>
-                </div>
+            <div className="h-screen bg-[#070B14] flex flex-col items-center justify-center p-6 text-center">
+                <Layout className="w-16 h-16 text-[#1E293B] mb-6" />
+                <h1 className="text-2xl font-bold text-white mb-2">Analysis Pending</h1>
+                <p className="text-[#94A3B8] mb-8 max-w-sm">Complete your system design and generate an architecture to unlock the final review.</p>
+                <button 
+                  onClick={() => router.push(`/architecture/${problemId}`)}
+                  className="px-8 py-3 bg-[#6366F1] hover:bg-[#818CF8] text-white rounded-xl font-bold transition-all shadow-lg shadow-[#6366F1]/20"
+                >
+                    Go to Architecture
+                </button>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen flex flex-col bg-black text-white">
-            <Navbar />
-            <main className="flex-1 p-6 md:p-12">
-            <div className="max-w-6xl mx-auto">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 mb-12 border-b border-gray-800 pb-6">
+        <div className="min-h-screen bg-[#070B14] text-[#E2E8F0]">
+            <main className="max-w-6xl mx-auto p-6 md:p-12">
+                
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-12 border-b border-[#1E293B] pb-10">
                     <div>
-                        <div className="flex items-center gap-2 text-[11px] text-gray-500 mb-2 font-medium tracking-wide">
-                            <a href="/problems" className="hover:text-white transition">Problems</a>
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest mb-3">
+                            <a href="/problems" className="hover:text-white transition">Challenges</a>
                             <span>/</span>
-                            <a href={`/interview/${problemId}`} className="hover:text-white transition">{problem}</a>
-                            <span>/</span>
-                            <span className="text-green-500">Review</span>
+                            <span className="text-[#6366F1]">Review</span>
                         </div>
-                        <h1 className="text-3xl font-bold">{problem}</h1>
+                        <h1 className="text-4xl font-bold text-white tracking-tight">{problem}</h1>
                     </div>
-                    <div className="hidden lg:flex flex-wrap gap-3">
+                    
+                    <div className="flex flex-wrap gap-3">
                         <SaveButton problemId={problemId} />
-                        <a
-                            href={`/architecture/${problemId}`}
-                            className="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-xl transition text-sm font-medium"
+                        <button 
+                           onClick={() => window.print()}
+                           className="px-5 py-2.5 rounded-xl border border-[#1E293B] bg-[#0F172A] text-[#94A3B8] hover:text-white hover:bg-[#1E293B] transition-all text-sm font-bold flex items-center gap-2"
                         >
-                            View Architecture
-                        </a>
-                        <a
-                            href="/problems"
-                            className="px-5 py-2.5 bg-white text-black hover:bg-gray-200 rounded-xl transition text-sm font-medium"
-                        >
-                            Back to Library
-                        </a>
-                        {!loading && !error && review && (
-                            <button
-                                onClick={handleShare}
-                                disabled={sharing || !!shareUrl}
-                                className="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-xl transition text-sm font-medium shadow-lg disabled:opacity-50 flex items-center gap-2"
-                            >
-                                {sharing ? (
-                                    <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                                ) : shareUrl ? (
-                                    "✓ Shared"
-                                ) : (
-                                    "🔗 Save & Share"
-                                )}
-                            </button>
-                        )}
+                           <FileText className="w-4 h-4" /> Export
+                        </button>
                         <button
-                            onClick={handleExport}
-                            className="px-5 py-2.5 bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-xl transition text-sm font-medium flex items-center gap-2 print:hidden"
+                          onClick={handleShare}
+                          disabled={sharing || !!shareUrl}
+                          className="px-6 py-2.5 bg-[#6366F1] hover:bg-[#818CF8] text-white rounded-xl font-bold transition-all shadow-lg shadow-[#6366F1]/20 text-sm flex items-center gap-2"
                         >
-                            <FileText className="w-4 h-4" />
-                            Export
+                          {sharing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Star className="w-4 h-4" />}
+                          {shareUrl ? "Shared" : "Save & Share"}
                         </button>
                     </div>
                 </div>
 
                 {shareUrl && (
-                    <div className="mb-12 p-4 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-center justify-between">
-                        <div>
-                            <p className="text-green-400 font-medium mb-1">Your public share link is ready!</p>
-                            <a href={shareUrl} target="_blank" rel="noreferrer" className="text-sm text-gray-300 hover:text-white underline decoration-gray-500 underline-offset-4">
-                                {shareUrl}
-                            </a>
+                    <motion.div 
+                      initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
+                      className="mb-12 p-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 flex items-center justify-between gap-6"
+                    >
+                        <div className="min-w-0">
+                            <p className="text-emerald-400 font-bold text-sm mb-1 uppercase tracking-wider">Share Link Ready</p>
+                            <p className="text-[#94A3B8] text-[13px] truncate">{shareUrl}</p>
                         </div>
-                        <button
-                            onClick={() => {
-                                navigator.clipboard.writeText(shareUrl);
-                                alert("Copied to clipboard!");
-                            }}
-                            className="px-4 py-2 bg-gray-900 hover:bg-gray-800 rounded-lg text-sm transition"
-                        >
-                            Copy Link
+                        <button onClick={() => { navigator.clipboard.writeText(shareUrl); alert("Copied!"); }} className="px-5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-lg text-xs font-bold transition-all shrink-0 uppercase tracking-widest">
+                            Copy
                         </button>
-                    </div>
+                    </motion.div>
                 )}
 
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-40 space-y-4">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-500"></div>
-                        <p className="text-gray-400 font-medium tracking-wide">Analyzing your performance and generating review...</p>
+                        <div className="w-10 h-10 border-4 border-[#6366F1]/30 border-t-[#6366F1] rounded-full animate-spin" />
+                        <p className="text-[#94A3B8] font-bold uppercase tracking-widest text-[10px]">Generating Analytics...</p>
                     </div>
-                ) : error ? (
-                    <div className="p-8 bg-red-900/10 border border-red-500/20 rounded-2xl text-center max-w-2xl mx-auto mt-20">
-                        <h3 className="text-xl text-red-400 font-semibold mb-3">Analysis Failed</h3>
-                        <p className="text-gray-300 mb-6">{error}</p>
-                        <button
-                            onClick={() => window.location.reload()}
-                            className="px-6 py-2.5 bg-gray-800 hover:bg-gray-700 rounded-xl transition"
-                        >
-                            Retry
-                        </button>
-                    </div>
-                ) : review ? (
+                ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* Left Column: Score & Lists */}
-                        <div className="lg:col-span-1 space-y-8">
-                            <div className="bg-[#020617] border border-gray-800 p-8 rounded-3xl text-center shadow-2xl relative overflow-hidden">
-                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 to-emerald-400"></div>
-                                <h2 className="text-gray-400 font-medium mb-2 uppercase tracking-widest text-xs">Final Score</h2>
-                                <div className="text-7xl font-black text-white tracking-tighter">
-                                    {review.finalScore}<span className="text-3xl text-gray-600 font-bold">/100</span>
+                        
+                        {/* Left Column: Scores */}
+                        <div className="space-y-8">
+                            <div className="bg-[#0F172A] border border-[#1E293B] p-10 rounded-3xl text-center relative overflow-hidden shadow-2xl">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-[#6366F1]" />
+                                <h2 className="text-[#94A3B8] font-bold text-[10px] uppercase tracking-widest mb-4">Mastery Score</h2>
+                                <div className="text-8xl font-black text-white tracking-tighter">
+                                    {review.finalScore}<span className="text-2xl text-[#94A3B8] font-bold">/100</span>
                                 </div>
                             </div>
 
-                            <CollapsibleSection title={<h3 className="text-green-400 font-semibold flex items-center gap-2"><span className="bg-green-500/20 p-1 rounded-md">👍</span> Strengths</h3>} defaultOpen={true}>
-                                <ul className="space-y-3">
-                                    {review.strengths?.map((s: string, i: number) => (
-                                        <li key={i} className="text-gray-300 text-sm leading-relaxed border-l-2 border-green-500/30 pl-3 py-1 break-words">
-                                            {s}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </CollapsibleSection>
+                            <div className="space-y-4">
+                               <CollapsibleSection title={<h3 className="text-emerald-400 font-bold flex items-center gap-2 uppercase tracking-widest text-xs">Strengths</h3>} defaultOpen={true}>
+                                  <ul className="space-y-3">
+                                      {review.strengths?.map((s: string, i: number) => (
+                                          <li key={i} className="flex gap-3 text-[#E2E8F0] text-[13px] leading-relaxed group">
+                                              <CheckCircle2 className="w-4 h-4 text-emerald-500/50 shrink-0 mt-0.5" />
+                                              {s}
+                                          </li>
+                                      ))}
+                                  </ul>
+                               </CollapsibleSection>
 
-                            <CollapsibleSection title={<h3 className="text-red-400 font-semibold flex items-center gap-2"><span className="bg-red-500/20 p-1 rounded-md">⚠️</span> Weaknesses</h3>} defaultOpen={true}>
-                                <ul className="space-y-3">
-                                    {review.weaknesses?.map((w: string, i: number) => (
-                                        <li key={i} className="text-gray-300 text-sm leading-relaxed border-l-2 border-red-500/30 pl-3 py-1 break-words">
-                                            {w}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </CollapsibleSection>
+                               <CollapsibleSection title={<h3 className="text-amber-400 font-bold flex items-center gap-2 uppercase tracking-widest text-xs">Weaknesses</h3>} defaultOpen={true}>
+                                  <ul className="space-y-3">
+                                      {review.weaknesses?.map((w: string, i: number) => (
+                                          <li key={i} className="flex gap-3 text-[#E2E8F0] text-[13px] leading-relaxed">
+                                              <Target className="w-4 h-4 text-amber-500/50 shrink-0 mt-0.5" />
+                                              {w}
+                                          </li>
+                                      ))}
+                                  </ul>
+                               </CollapsibleSection>
+                            </div>
                         </div>
 
                         {/* Right Column: Deep Dive */}
-                        <div className="lg:col-span-2 space-y-4 lg:space-y-8">
-                            <CollapsibleSection className="bg-[#0f172a] border border-gray-800 shadow-xl" title={<h3 className="text-lg lg:text-xl font-bold text-white">System Architecture Summary</h3>}>
-                                <p className="text-gray-300 leading-relaxed text-sm">
+                        <div className="lg:col-span-2 space-y-8">
+                            <div className="p-8 rounded-3xl bg-[#0F172A] border border-[#1E293B] shadow-xl">
+                                <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                                   <BarChart3 className="w-5 h-5 text-[#6366F1]" /> Architecture Analysis
+                                </h3>
+                                <p className="text-[#94A3B8] leading-relaxed text-[15px]">
                                     {review.architectureSummary}
                                 </p>
-                            </CollapsibleSection>
+                            </div>
 
-                            <CollapsibleSection className="bg-[#020617] border border-gray-800 shadow-xl" title={<h3 className="text-lg lg:text-xl font-bold text-white">Component Explanations</h3>}>
+                            <div className="space-y-6">
+                                <h3 className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-widest pl-4">Component Breakdown</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {review.componentExplanations?.map((comp: any, i: number) => (
-                                        <div key={i} className="bg-gray-900/50 p-5 rounded-2xl border border-gray-800/50 flex flex-col">
-                                            <h4 className="font-semibold text-blue-400 mb-2 break-words">{comp.component}</h4>
-                                            <p className="text-sm text-gray-400 leading-relaxed flex-1 break-words">{comp.reasoning}</p>
+                                        <div key={i} className="p-6 rounded-3xl bg-[#0F172A] border border-[#1E293B] hover:bg-[#0F172A]/80 transition-all">
+                                            <h4 className="font-bold text-[#6366F1] mb-3">{comp.component}</h4>
+                                            <p className="text-[13px] text-[#94A3B8] leading-relaxed mb-6">{comp.reasoning}</p>
                                             
-                                            {/* Explain Mistake Button/Result */}
-                                            <div className="mt-4 pt-4 border-t border-gray-800/50 print:hidden">
+                                            <div className="pt-4 border-t border-[#1E293B]">
                                                 {explanations[comp.component] ? (
-                                                    <div className="bg-blue-900/20 p-4 rounded-xl border border-blue-500/20">
-                                                        <h5 className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                                            <HelpCircle className="w-3.5 h-3.5" /> Coach Explanation
+                                                    <div className="bg-[#0F172A] p-4 rounded-2xl border border-[#1E293B]">
+                                                        <h5 className="text-[10px] font-bold text-[#6366F1] uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                            <HelpCircle className="w-3.5 h-3.5" /> Coach Intel
                                                         </h5>
-                                                        <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+                                                        <p className="text-[12px] text-[#E2E8F0] leading-relaxed italic">
                                                             {explanations[comp.component]}
                                                         </p>
                                                     </div>
@@ -367,43 +320,38 @@ export default function ReviewPage() {
                                                     <button
                                                         onClick={() => handleExplainMistake(comp.component, comp.reasoning)}
                                                         disabled={explainingMap[comp.component]}
-                                                        className="flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-blue-400 transition-colors disabled:opacity-50 disabled:hover:text-gray-400"
+                                                        className="flex items-center gap-2 text-[11px] font-bold text-[#94A3B8] hover:text-[#6366F1] transition-all uppercase tracking-widest"
                                                     >
-                                                        {explainingMap[comp.component] ? (
-                                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                        ) : (
-                                                            <HelpCircle className="w-3.5 h-3.5" />
-                                                        )}
-                                                        {explainingMap[comp.component] ? "Analyzing..." : "Explain My Mistake"}
+                                                        {explainingMap[comp.component] ? <Loader2 className="w-3 h-3 animate-spin" /> : <HelpCircle className="w-3.5 h-3.5" />}
+                                                        Explain Mistake
                                                     </button>
                                                 )}
                                             </div>
                                         </div>
                                     ))}
                                 </div>
-                            </CollapsibleSection>
+                            </div>
 
-                            <CollapsibleSection className="bg-gradient-to-br from-green-900/20 to-emerald-900/10 border border-green-500/20 shadow-xl" title={<h3 className="text-lg lg:text-xl font-bold text-green-400">Recommended Improvements</h3>}>
-                                <div className="space-y-4">
+                            <div className="p-8 rounded-3xl bg-[#0F172A] border border-[#1E293B] relative overflow-hidden group shadow-2xl">
+                               <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[#6366F1]/5 blur-[80px] rounded-full pointer-events-none" />
+                               <h3 className="text-xl font-bold text-white mb-6 relative z-10">Recommended Roadmap</h3>
+                               <div className="space-y-4 relative z-10">
                                     {review.recommendedImprovements?.map((rec: string, i: number) => (
-                                        <div key={i} className="flex gap-3 lg:gap-4 p-4 bg-black/40 rounded-2xl border border-gray-800/50">
-                                            <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-full bg-green-500/10 text-green-400 flex items-center justify-center font-bold shrink-0 text-sm">
+                                        <div key={i} className="flex gap-4 p-4 bg-[#070B14]/60 rounded-2xl border border-[#1E293B]">
+                                            <div className="w-8 h-8 rounded-xl bg-[#6366F1] text-white flex items-center justify-center font-black shrink-0 text-sm">
                                                 {i + 1}
                                             </div>
-                                            <p className="text-gray-300 text-[13px] lg:text-sm leading-relaxed pt-1 break-words">
-                                                {rec}
-                                            </p>
+                                            <p className="text-[#E2E8F0] text-[13px] leading-relaxed pt-1.5">{rec}</p>
                                         </div>
                                     ))}
-                                </div>
-                            </CollapsibleSection>
+                               </div>
+                            </div>
                         </div>
                     </div>
-                ) : null}
+                )}
 
-                {/* ─── Model Answer ─── */}
                 {!loading && review && (
-                    <div className="mt-10">
+                    <div className="mt-20 space-y-12">
                         <ModelAnswerCard
                             problemId={problemId}
                             problemTitle={scenario?.title ?? problemId}
@@ -428,94 +376,22 @@ export default function ReviewPage() {
                             cachedAnswer={modelAnswer}
                             onAnswerGenerated={handleModelAnswerGenerated}
                         />
-                    </div>
-                )}
 
-                {/* ─── Comparison & Retry Section ─── */}
-                {!loading && review && (
-                    <div className="mt-10 space-y-8 print:hidden">
-                        {/* Comparison */}
-                        {modelAnswer && (
-                            <div className="bg-gray-900/40 p-8 rounded-3xl border border-gray-800/50">
-                                <h3 className="text-xl font-bold mb-6 text-white flex items-center gap-2">
-                                    <GitMerge className="w-5 h-5 text-purple-400" />
-                                    Your Design vs Model Answer
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-black/50 p-5 rounded-2xl border border-red-500/10">
-                                        <h4 className="text-red-400 font-semibold mb-3">Missing from your answer</h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {review.weaknesses?.map((w: string, i: number) => (
-                                                <span key={i} className="text-[11px] px-2.5 py-1 rounded-md bg-red-500/10 text-red-300 border border-red-500/20">
-                                                    {w.substring(0, 40)}{w.length > 40 ? "..." : ""}
-                                                </span>
-                                            ))}
-                                            {(!review.weaknesses || review.weaknesses.length === 0) && (
-                                                <span className="text-gray-500 text-sm">Great job, no major misses!</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="bg-black/50 p-5 rounded-2xl border border-green-500/10">
-                                        <h4 className="text-green-400 font-semibold mb-3">Model Answer Focus</h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            {modelAnswer.bottlenecks?.slice(0, 3).map((b: string, i: number) => (
-                                                <span key={i} className="text-[11px] px-2.5 py-1 rounded-md bg-green-500/10 text-green-300 border border-green-500/20">
-                                                    {b.substring(0, 40)}{b.length > 40 ? "..." : ""}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Retry CTA */}
-                        <div className="rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-950/20 to-purple-950/10 overflow-hidden p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="p-10 rounded-3xl bg-[#0F172A] border border-[#1E293B] flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl">
                             <div>
-                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                                    <RefreshCw className="w-5 h-5 text-blue-400" />
-                                    Retry with Feedback
-                                </h3>
-                                <p className="text-gray-400 text-sm mt-2 max-w-xl">
-                                    Practice this problem again in Improvement Mode. You'll get targeted hints based on your weakest areas from this attempt.
-                                </p>
+                                <h3 className="text-2xl font-bold text-white mb-3">Mastered the concepts?</h3>
+                                <p className="text-[#94A3B8] text-[15px] max-w-xl">Take what you've learned and start an improved attempt. We'll adjust the AI difficulty and provide smarter hints.</p>
                             </div>
                             <button
                                 onClick={handleRetry}
-                                className="shrink-0 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-500/20 hover:scale-[1.02]"
+                                className="px-8 py-4 bg-[#6366F1] hover:bg-[#818CF8] text-white font-bold rounded-2xl transition-all shadow-lg shadow-[#6366F1]/20 whitespace-nowrap flex items-center gap-2"
                             >
-                                Start Improved Attempt
+                                <RefreshCw className="w-5 h-5" /> Retry with Intel
                             </button>
                         </div>
                     </div>
                 )}
-            </div>
-        </main>
-        
-        {/* Mobile Sticky Action Bar */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-[#020617]/90 backdrop-blur-xl border-t border-gray-800 flex justify-between gap-2 z-50 print:hidden">
-            <a
-                href="/problems"
-                className="px-4 py-2.5 bg-white text-black hover:bg-gray-200 rounded-xl transition text-[13px] font-semibold flex-1 text-center"
-            >
-                Back
-            </a>
-            {!loading && !error && review && (
-                <button
-                    onClick={handleShare}
-                    disabled={sharing || !!shareUrl}
-                    className="px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl transition text-[13px] font-semibold flex-1 text-center shadow-lg disabled:opacity-50"
-                >
-                    {sharing ? "Sharing..." : shareUrl ? "✓ Shared" : "Share"}
-                </button>
-            )}
-            <a
-                href={`/architecture/${problemId}`}
-                className="px-4 py-2.5 bg-gray-800 text-white hover:bg-gray-700 rounded-xl transition text-[13px] font-semibold flex-1 text-center whitespace-nowrap"
-            >
-                Architecture
-            </a>
-        </div>
+            </main>
         </div>
     );
 }

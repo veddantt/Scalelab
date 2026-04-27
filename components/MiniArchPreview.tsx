@@ -3,7 +3,7 @@
 import type { ArchPreviewNode, ArchPreviewEdge } from "@/lib/problems";
 
 const nodeColors: Record<ArchPreviewNode["type"], { bg: string; border: string; text: string; dot: string }> = {
-  client:   { bg: "bg-blue-500/10",    border: "border-blue-500/40",    text: "text-blue-300",    dot: "bg-blue-400" },
+  client:   { bg: "bg-[#6366F1]/10",    border: "border-[#6366F1]/40",    text: "text-blue-300",    dot: "bg-blue-400" },
   gateway:  { bg: "bg-purple-500/10",  border: "border-purple-500/40",  text: "text-purple-300",  dot: "bg-purple-400" },
   service:  { bg: "bg-cyan-500/10",    border: "border-cyan-500/40",    text: "text-cyan-300",    dot: "bg-cyan-400" },
   cache:    { bg: "bg-yellow-500/10",  border: "border-yellow-500/40",  text: "text-yellow-300",  dot: "bg-yellow-400" },
