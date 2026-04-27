@@ -2,6 +2,7 @@
 // Server-only AI service for ScaleLab interview chat.
 
 import type { InterviewMessage, InterviewScores } from "@/lib/types";
+import { getProblemMeta } from "@/lib/problems";
 
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL = "deepseek/deepseek-chat";
@@ -9,9 +10,12 @@ const MODEL = "deepseek/deepseek-chat";
 export interface ChatAIRequest {
   messages: InterviewMessage[];
   problem: string;
+  /** Problem id — used to enrich prompts with structured context */
+  problemId?: string;
   step: number;
   practiceMode?: boolean;
   weakestAreas?: string[];
+  isInitialQuestion?: boolean;
 }
 
 export interface ChatAIResponse {
@@ -23,8 +27,23 @@ export interface ChatAIResponse {
   followUp?: string;
 }
 
+/** Build structured context block for problems that have rich metadata */
+function buildProblemContext(problemId?: string): string {
+  if (!problemId) return "";
+  const meta = getProblemMeta(problemId);
+  if (!meta) return "";
+
+  const lines: string[] = [
+    `\nProblem context for "${meta.problem.title}":`,
+    `Requirements: ${meta.requirements.join("; ")}`,
+    `Practice focus areas: ${meta.practiceSkills.join(", ")}`,
+  ];
+  return lines.join("\n");
+}
+
 function buildSystemPrompt(
   problem: string,
+  problemId: string | undefined,
   step: number,
   practiceMode?: boolean,
   weakestAreas?: string[]
@@ -38,6 +57,8 @@ function buildSystemPrompt(
       ? `\nThe user previously struggled with: ${weakestAreas.join(", ")}. Probe those areas when relevant.`
       : "";
 
+  const problemContext = buildProblemContext(problemId);
+
   return `${toneInstruction}
 
 Problem: ${problem}
@@ -50,7 +71,7 @@ Step mapping:
 4=Architecture
 5=Bottlenecks
 6=Review
-${weaknessContext}
+${problemContext}${weaknessContext}
 
 Rules:
 - Ask exactly ONE focused question.
@@ -71,6 +92,33 @@ Return ONLY valid JSON:
   "shouldAdvance": false,
   "reason": "why the user should or should not advance",
   "followUp": "optional deeper follow-up"
+}`;
+}
+
+function buildInitialPrompt(problem: string, problemId?: string): string {
+  const problemContext = buildProblemContext(problemId);
+
+  return `You are a senior FAANG system design interviewer starting a mock interview.
+
+Problem: ${problem}
+${problemContext}
+
+Your task: Open the interview with a clear, engaging introduction followed by the first question about functional requirements.
+
+Rules:
+- Welcome the candidate and briefly set the stage.
+- Ask exactly ONE opening question about the core functional requirements.
+- Keep the reply concise and professional.
+- Do NOT ask multiple questions.
+
+Return ONLY valid JSON:
+{
+  "reply": "your opening message and first question",
+  "feedback": "",
+  "scores": { "clarity": 0, "depth": 0, "correctness": 0 },
+  "shouldAdvance": false,
+  "reason": "initial question",
+  "followUp": null
 }`;
 }
 
@@ -112,24 +160,7 @@ export async function runChatTurn(req: ChatAIRequest): Promise<ChatAIResponse> {
     throw new Error("Invalid chat request");
   }
 
-  const systemPrompt = buildSystemPrompt(
-    req.problem,
-    req.step,
-    req.practiceMode,
-    req.weakestAreas
-  );
-
-  const trimmedMessages = req.messages.slice(-10);
-
-  const openRouterMessages = [
-    { role: "system", content: systemPrompt },
-    ...trimmedMessages.map((m) => ({
-      role: m.role === "ai" ? "assistant" : "user",
-      content: m.content,
-    })),
-  ];
-
-  async function callOpenRouter(messages: typeof openRouterMessages): Promise<string> {
+  async function callOpenRouter(messages: { role: string; content: string }[]): Promise<string> {
     const res = await fetch(OPENROUTER_BASE, {
       method: "POST",
       headers: {
@@ -158,6 +189,32 @@ export async function runChatTurn(req: ChatAIRequest): Promise<ChatAIResponse> {
     }
 
     return content;
+  }
+
+  // Build the message array for OpenRouter
+  let openRouterMessages: { role: string; content: string }[];
+
+  if (req.isInitialQuestion) {
+    // For the initial question, use a dedicated prompt with no prior messages
+    openRouterMessages = [
+      { role: "system", content: buildInitialPrompt(req.problem, req.problemId) },
+    ];
+  } else {
+    const systemPrompt = buildSystemPrompt(
+      req.problem,
+      req.problemId,
+      req.step,
+      req.practiceMode,
+      req.weakestAreas
+    );
+    const trimmedMessages = req.messages.slice(-10);
+    openRouterMessages = [
+      { role: "system", content: systemPrompt },
+      ...trimmedMessages.map((m) => ({
+        role: m.role === "ai" ? "assistant" : "user",
+        content: m.content,
+      })),
+    ];
   }
 
   try {

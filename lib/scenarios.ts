@@ -61,6 +61,36 @@ export const problems: Problem[] = [
     estimatedMinutes: 30,
     examples: ["Firebase Cloud Messaging", "SendGrid", "Twilio"],
   },
+  {
+    id: "search-autocomplete",
+    title: "Design a Search Autocomplete System",
+    difficulty: "Advanced",
+    description:
+      "Design a low-latency autocomplete system like Google or Amazon that returns ranked search suggestions as users type, supporting high QPS, prefix caching, and personalized results.",
+    tags: ["Trie", "Ranking", "Caching", "Low Latency", "High QPS"],
+    estimatedMinutes: 45,
+    examples: ["Google Search", "Amazon", "YouTube", "LinkedIn"],
+  },
+  {
+    id: "distributed-job-scheduler",
+    title: "Design a Distributed Job Scheduler",
+    difficulty: "Advanced",
+    description:
+      "Design a cron-like distributed scheduler that runs one-time and recurring jobs reliably across workers, with retry logic, failure recovery, and duplicate prevention.",
+    tags: ["Scheduling", "Workers", "Queues", "Fault Tolerance", "Distributed Systems"],
+    estimatedMinutes: 50,
+    examples: ["Airflow", "Kubernetes CronJobs", "Celery Beat", "Quartz"],
+  },
+  {
+    id: "video-streaming-platform",
+    title: "Design a Video Streaming Platform",
+    difficulty: "Advanced",
+    description:
+      "Design a global video platform like YouTube or Netflix supporting uploads, multi-quality transcoding, CDN delivery, adaptive bitrate streaming, and analytics.",
+    tags: ["CDN", "Streaming", "Encoding", "Caching", "Distributed Systems"],
+    estimatedMinutes: 50,
+    examples: ["YouTube", "Netflix", "Twitch", "Vimeo"],
+  },
 ];
 
 export function getProblem(id: string): Problem | undefined {

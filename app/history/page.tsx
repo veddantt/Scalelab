@@ -23,6 +23,9 @@ import {
   HardDrive,
   Bell,
   Zap,
+  Search,
+  Calendar,
+  Video,
 } from "lucide-react";
 
 const iconMap: Record<string, any> = {
@@ -32,6 +35,9 @@ const iconMap: Record<string, any> = {
   "rate-limiter": ShieldCheck,
   "file-storage": HardDrive,
   "notification-system": Bell,
+  "search-autocomplete": Search,
+  "distributed-job-scheduler": Calendar,
+  "video-streaming-platform": Video,
 };
 
 function timeAgo(dateStr: string): string {

@@ -56,6 +56,7 @@ export default function InterviewPage() {
           body: JSON.stringify({
             messages: [],
             problem,
+            problemId,
             step: 0,
             practiceMode,
             weakestAreas,
@@ -127,6 +128,7 @@ export default function InterviewPage() {
         body: JSON.stringify({
           messages: newMessages,
           problem,
+          problemId,
           step: currentStep,
           practiceMode,
           weakestAreas,
