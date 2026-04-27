@@ -153,7 +153,7 @@ function LiveFlowStrip() {
       <div className="flex flex-col sm:flex-row gap-4 mt-8 w-full justify-center">
         {/* Bottleneck Card */}
         <div className={`
-          flex-1 max-w-[280px] p-4 rounded-2xl border transition-all duration-500
+          flex-1 w-full sm:max-w-[280px] lg:max-w-[280px] p-4 rounded-2xl border transition-all duration-500
           ${currentInsight === "bottleneck" ? "bg-red-500/10 border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.1)] -translate-y-1" : "bg-gray-900/20 border-gray-800/40 opacity-50"}
         `}>
           <div className="flex items-center gap-2 mb-2">
@@ -167,7 +167,7 @@ function LiveFlowStrip() {
 
         {/* Tradeoff Card */}
         <div className={`
-          flex-1 max-w-[280px] p-4 rounded-2xl border transition-all duration-500
+          flex-1 w-full sm:max-w-[280px] lg:max-w-[280px] p-4 rounded-2xl border transition-all duration-500
           ${currentInsight === "tradeoff" ? "bg-blue-500/10 border-blue-500/30 shadow-[0_0_30px_rgba(59,130,246,0.1)] -translate-y-1" : "bg-gray-900/20 border-gray-800/40 opacity-50"}
         `}>
           <div className="flex items-center gap-2 mb-2">
@@ -181,7 +181,7 @@ function LiveFlowStrip() {
 
         {/* Scaling Card */}
         <div className={`
-          flex-1 max-w-[280px] p-4 rounded-2xl border transition-all duration-500
+          flex-1 w-full sm:max-w-[280px] lg:max-w-[280px] p-4 rounded-2xl border transition-all duration-500
           ${currentInsight === "scaling" ? "bg-emerald-500/10 border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.1)] -translate-y-1" : "bg-gray-900/20 border-gray-800/40 opacity-50"}
         `}>
           <div className="flex items-center gap-2 mb-2">
@@ -215,7 +215,7 @@ export default function Home() {
             AI-Powered System Design
           </div>
 
-          <h1 className="text-4xl md:text-5xl lg:text-[4rem] font-extrabold tracking-tight leading-[1.1] mb-6">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[4rem] font-extrabold tracking-tight leading-[1.1] mb-6">
             Practice System Design
             <br />
             <span className="bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">

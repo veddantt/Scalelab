@@ -256,9 +256,9 @@ export default function InterviewPage() {
       <Navbar />
 
       {/* ─── Content ─── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden">
         {/* ─── LEFT: Chat ─── */}
-        <div className="flex-1 border-r border-gray-800/50 flex flex-col min-w-0">
+        <div className="w-full lg:flex-1 min-h-[60vh] lg:min-h-0 border-b lg:border-b-0 border-gray-800/50 flex flex-col min-w-0">
           {/* Header */}
           <div className="px-6 py-4 border-b border-gray-800/50 bg-black/40 backdrop-blur-md flex items-center justify-between">
             <div>
@@ -374,7 +374,7 @@ export default function InterviewPage() {
         </div>
 
         {/* ─── RIGHT: Sidebar ─── */}
-        <aside className="w-[340px] flex flex-col bg-[#020617] border-l border-gray-800/50 overflow-hidden">
+        <aside className="w-full lg:w-[340px] shrink-0 flex flex-col bg-[#020617] border-t lg:border-t-0 lg:border-l border-gray-800/50 overflow-hidden">
 
         {/* ─── Sidebar Header ─── */}
         <div className="px-4 pt-4 pb-3 border-b border-gray-800/50 shrink-0 space-y-3">

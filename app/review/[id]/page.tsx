@@ -307,7 +307,7 @@ export default function ReviewPage() {
                                 </h3>
                                 <ul className="space-y-3">
                                     {review.strengths?.map((s: string, i: number) => (
-                                        <li key={i} className="text-gray-300 text-sm leading-relaxed border-l-2 border-green-500/30 pl-3 py-1">
+                                        <li key={i} className="text-gray-300 text-sm leading-relaxed border-l-2 border-green-500/30 pl-3 py-1 break-words">
                                             {s}
                                         </li>
                                     ))}
@@ -320,7 +320,7 @@ export default function ReviewPage() {
                                 </h3>
                                 <ul className="space-y-3">
                                     {review.weaknesses?.map((w: string, i: number) => (
-                                        <li key={i} className="text-gray-300 text-sm leading-relaxed border-l-2 border-red-500/30 pl-3 py-1">
+                                        <li key={i} className="text-gray-300 text-sm leading-relaxed border-l-2 border-red-500/30 pl-3 py-1 break-words">
                                             {w}
                                         </li>
                                     ))}
@@ -342,8 +342,8 @@ export default function ReviewPage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {review.componentExplanations?.map((comp: any, i: number) => (
                                         <div key={i} className="bg-gray-900/50 p-5 rounded-2xl border border-gray-800/50 flex flex-col">
-                                            <h4 className="font-semibold text-blue-400 mb-2">{comp.component}</h4>
-                                            <p className="text-sm text-gray-400 leading-relaxed flex-1">{comp.reasoning}</p>
+                                            <h4 className="font-semibold text-blue-400 mb-2 break-words">{comp.component}</h4>
+                                            <p className="text-sm text-gray-400 leading-relaxed flex-1 break-words">{comp.reasoning}</p>
                                             
                                             {/* Explain Mistake Button/Result */}
                                             <div className="mt-4 pt-4 border-t border-gray-800/50 print:hidden">
@@ -384,7 +384,7 @@ export default function ReviewPage() {
                                             <div className="w-8 h-8 rounded-full bg-green-500/10 text-green-400 flex items-center justify-center font-bold shrink-0 text-sm">
                                                 {i + 1}
                                             </div>
-                                            <p className="text-gray-300 text-sm leading-relaxed pt-1.5">
+                                            <p className="text-gray-300 text-sm leading-relaxed pt-1.5 break-words">
                                                 {rec}
                                             </p>
                                         </div>

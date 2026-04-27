@@ -453,9 +453,9 @@ export default function ProblemsPage() {
               </button>
             </div>
           ) : (
-            <div className="flex flex-col lg:grid lg:grid-cols-[280px_1fr] gap-4 h-auto lg:h-[620px]">
+            <div className="flex flex-col lg:flex-row gap-4 h-auto lg:h-[620px]">
               {/* ── Left: problem list ── */}
-              <div className="flex flex-col gap-1.5 overflow-y-auto pr-1 scrollbar-thin max-h-[300px] lg:max-h-full">
+              <div className="w-full lg:w-[280px] shrink-0 flex flex-col gap-1.5 overflow-y-auto pr-1 scrollbar-thin max-h-[300px] lg:max-h-full">
                 {filtered.map((meta) => {
                   const { problem } = meta;
                   const Icon = iconMap[problem.id] ?? Link2;
@@ -494,7 +494,7 @@ export default function ProblemsPage() {
               </div>
 
               {/* ── Right: detail panel ── */}
-              <div className="relative overflow-hidden rounded-2xl border border-gray-800/50 bg-[#080d1e]/60 backdrop-blur-xl transition-all duration-300" key={selectedMeta.problem.id}>
+              <div className="w-full flex-1 min-h-[400px] lg:min-h-0 relative overflow-hidden rounded-2xl border border-gray-800/50 bg-[#080d1e]/60 backdrop-blur-xl transition-all duration-300" key={selectedMeta.problem.id}>
                 {/* Top glow */}
                 <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
                 <ProblemDetailPanel

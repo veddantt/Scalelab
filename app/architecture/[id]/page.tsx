@@ -250,7 +250,7 @@ function ArchitectureInner() {
       <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
 
         {/* ─── Canvas ─── */}
-        <div className="flex-1 min-h-[55vh] lg:min-h-0 relative shrink-0 border-b lg:border-b-0 lg:border-r border-gray-800/50" ref={flowRef}>
+        <div className="w-full lg:flex-1 h-[55vh] lg:h-auto min-h-[55vh] lg:min-h-0 relative shrink-0 border-b lg:border-b-0 border-gray-800/50" ref={flowRef}>
           {loading ? (
             <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-4">
               <div className="relative">
@@ -313,7 +313,7 @@ function ArchitectureInner() {
         </div>
 
         {/* ─── Right Panel ─── */}
-        <aside className="w-full lg:w-[380px] shrink-0 bg-[#020617] flex flex-col overflow-hidden">
+        <aside className="w-full lg:w-[380px] shrink-0 bg-[#020617] flex flex-col border-t lg:border-t-0 lg:border-l border-gray-800/50 overflow-hidden">
           {/* Tab bar */}
           <div className="flex border-b border-gray-800/50 shrink-0">
             {([
