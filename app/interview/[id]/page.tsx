@@ -56,7 +56,6 @@ export default function InterviewPage() {
           body: JSON.stringify({
             messages: [],
             problem,
-            problemId,
             step: 0,
             practiceMode,
             weakestAreas,
@@ -65,7 +64,7 @@ export default function InterviewPage() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to start interview");
-        
+
         setMessages([
           {
             role: "ai",
@@ -81,13 +80,13 @@ export default function InterviewPage() {
         setSending(false);
       }
     };
-    
+
     // Only call this if we have a problem and haven't loaded session messages
     // The session loading effect should run first ideally.
     if (problem && messages.length === 0) {
-        startInterview();
+      startInterview();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [problem, messages.length]); // Adding practiceMode/weakestAreas creates a loop. Keep it to initial load.
 
   const [input, setInput] = useState("");
@@ -128,7 +127,6 @@ export default function InterviewPage() {
         body: JSON.stringify({
           messages: newMessages,
           problem,
-          problemId,
           step: currentStep,
           practiceMode,
           weakestAreas,
@@ -268,12 +266,12 @@ export default function InterviewPage() {
 
   if (!scenario) {
     return (
-      <div className="h-screen flex flex-col bg-[#020617] text-white">
+      <div className="app-shell h-screen flex flex-col">
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-          <h1 className="text-3xl font-bold mb-4">Problem Not Found</h1>
-          <p className="text-gray-400 mb-8">The scenario you are looking for does not exist.</p>
-          <a href="/problems" className="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-medium transition">
+          <h1 className="section-title mb-4">Problem Not Found</h1>
+          <p className="muted-text mb-8 text-sm">The scenario you are looking for does not exist.</p>
+          <a href="/problems" className="primary-button px-6 py-2.5 text-sm">
             Browse Problems
           </a>
         </div>
@@ -282,17 +280,17 @@ export default function InterviewPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-[#020617] text-white overflow-hidden">
+    <div className="app-shell h-screen flex flex-col overflow-hidden">
       <Navbar />
 
       {/* ─── Content ─── */}
-      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden">
         {/* ─── LEFT: Chat ─── */}
-        <div className="flex-1 flex flex-col overflow-hidden border-b lg:border-b-0 border-gray-800/50 min-w-0">
+        <div className="w-full lg:flex-1 min-h-[60vh] lg:min-h-0 border-b lg:border-b-0 border-gray-800/50 flex flex-col min-w-0">
           {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-800/50 bg-black/40 backdrop-blur-md flex items-center justify-between">
+          <div className="glass-card px-6 py-4 border-b border-gray-800/50 flex items-center justify-between rounded-none">
             <div>
-              <div className="flex items-center gap-2 text-[11px] text-gray-500 mb-1.5 font-medium tracking-wide">
+              <div className="flex items-center gap-2 text-[11px] muted-text mb-1.5 font-medium tracking-wide">
                 <a href="/problems" className="hover:text-white transition">Problems</a>
                 <span>/</span>
                 <a href={`/interview/${problemId}`} className="hover:text-white transition">{problem}</a>
@@ -301,15 +299,15 @@ export default function InterviewPage() {
               </div>
               <h1 className="text-lg font-semibold">{problem}</h1>
               {scenario && (
-                <p className="text-xs text-gray-400 mt-1">{scenario.description}</p>
+                <p className="muted-text text-xs mt-1">{scenario.description}</p>
               )}
             </div>
             <div className="flex items-center gap-2">
               <SaveButton problemId={problemId} />
-              <span className="text-xs text-gray-500 font-medium">
+              <span className="muted-text text-xs font-medium">
                 Step {currentStep + 1}/{INTERVIEW_STEPS.length}
               </span>
-              <span className="text-xs font-semibold text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">
+              <span className="status-pill text-purple-400 border-purple-500/30 bg-purple-500/10">
                 {INTERVIEW_STEPS[currentStep].title}
               </span>
             </div>
@@ -347,30 +345,19 @@ export default function InterviewPage() {
           )}
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-dark">
-            {/* Loading skeleton while first AI message is being fetched */}
-            {sending && messages.length === 0 && (
-              <div className="max-w-2xl animate-pulse">
-                <div className="text-xs mb-1.5 text-gray-600 font-medium">ScaleLab AI</div>
-                <div className="bg-gray-900/60 border border-gray-800/50 rounded-2xl p-4 space-y-2">
-                  <div className="h-3 bg-gray-800 rounded w-3/4" />
-                  <div className="h-3 bg-gray-800 rounded w-1/2" />
-                  <div className="h-3 bg-gray-800 rounded w-2/3" />
-                </div>
-              </div>
-            )}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {messages.map((msg, i) => (
               <div
                 key={i}
                 className={`max-w-2xl ${msg.role === "ai" ? "" : "ml-auto"}`}
               >
-                <div className="text-xs mb-1.5 text-gray-500 font-medium">
+                <div className="muted-text text-xs mb-1.5 font-medium">
                   {msg.role === "ai" ? "ScaleLab AI" : "You"}
                 </div>
                 <div
                   className={`p-4 rounded-2xl text-sm leading-relaxed ${msg.role === "ai"
-                      ? "bg-gray-900/60 border border-gray-800/50 text-gray-200"
-                      : "bg-purple-600/20 border border-purple-500/20 text-white"
+                    ? "glass-card text-gray-200"
+                    : "bg-purple-600/20 border border-purple-500/20 text-white"
                     }`}
                 >
                   {msg.content}
@@ -400,7 +387,7 @@ export default function InterviewPage() {
               <button
                 onClick={sendMessage}
                 disabled={sending || !input.trim()}
-                className="px-5 bg-white text-black rounded-2xl font-medium text-sm hover:bg-gray-100 transition disabled:opacity-40 flex items-center gap-2"
+                className="primary-button px-5 py-3 text-sm gap-2"
               >
                 {sending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -414,13 +401,13 @@ export default function InterviewPage() {
         </div>
 
         {/* ─── RIGHT: Sidebar ─── */}
-        <aside className="w-full lg:w-[340px] shrink-0 flex flex-col bg-[#020617] border-t lg:border-t-0 lg:border-l border-gray-800/50 overflow-hidden" style={{minHeight: 0}}>
+        <aside className="w-full lg:w-[340px] shrink-0 flex flex-col premium-card border-t lg:border-t-0 lg:border-l border-gray-800/50 overflow-hidden rounded-none">
 
           {/* ─── Sidebar Header ─── */}
           <div className="px-4 pt-4 pb-3 border-b border-gray-800/50 shrink-0 space-y-3">
 
             {/* Title */}
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">
+            <p className="muted-text text-[10px] font-bold uppercase tracking-[0.18em]">
               System Design Interview
             </p>
 
@@ -432,7 +419,7 @@ export default function InterviewPage() {
                   Live Interview
                 </span>
               </div>
-              <span className="text-[11px] font-semibold text-gray-500">
+              <span className="muted-text text-[11px] font-semibold">
                 Step {currentStep + 1}/{INTERVIEW_STEPS.length}
               </span>
             </div>
@@ -460,8 +447,8 @@ export default function InterviewPage() {
                   key={id}
                   onClick={() => setSidebarTab(id)}
                   className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-all capitalize ${sidebarTab === id
-                      ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow"
-                      : "text-gray-500 hover:text-gray-300"
+                    ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow"
+                    : "text-gray-500 hover:text-gray-300"
                     }`}
                 >
                   {id === "arch" ? "Architecture" : id.charAt(0).toUpperCase() + id.slice(1)}
@@ -471,7 +458,7 @@ export default function InterviewPage() {
           </div>
 
           {/* Tab body */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-dark">
+          <div className="flex-1 overflow-y-auto px-4 py-4">
 
             {/* ── STEPS TAB ── */}
             {sidebarTab === "steps" && (
@@ -494,21 +481,21 @@ export default function InterviewPage() {
                           }
                         }}
                         className={`group flex items-start gap-3 p-3 rounded-xl border transition-all duration-200 ${isCurrent
-                            ? "bg-purple-500/10 border-purple-500/30 shadow-[0_0_16px_rgba(168,85,247,0.1)]"
-                            : isCompleted
-                              ? "bg-gray-900/30 border-gray-800/40 cursor-pointer hover:bg-gray-800/40 hover:border-gray-700"
-                              : isLocked
-                                ? "bg-transparent border-transparent cursor-not-allowed opacity-40"
-                                : "bg-gray-900/20 border-gray-800/30 cursor-pointer hover:bg-gray-800/30"
+                          ? "bg-purple-500/10 border-purple-500/30 shadow-[0_0_16px_rgba(168,85,247,0.1)]"
+                          : isCompleted
+                            ? "bg-gray-900/30 border-gray-800/40 cursor-pointer hover:bg-gray-800/40 hover:border-gray-700"
+                            : isLocked
+                              ? "bg-transparent border-transparent cursor-not-allowed opacity-40"
+                              : "bg-gray-900/20 border-gray-800/30 cursor-pointer hover:bg-gray-800/30"
                           }`}
                       >
                         {/* Circle */}
                         <div
                           className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 transition-all ${isCurrent
-                              ? "bg-purple-500 text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]"
-                              : isCompleted
-                                ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-400"
-                                : "bg-gray-800/80 border border-gray-700/60 text-gray-600"
+                            ? "bg-purple-500 text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]"
+                            : isCompleted
+                              ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-400"
+                              : "bg-gray-800/80 border border-gray-700/60 text-gray-600"
                             }`}
                         >
                           {isCompleted ? "✓" : i + 1}
@@ -519,26 +506,26 @@ export default function InterviewPage() {
                           <div className="flex items-center justify-between gap-2 mb-0.5">
                             <span
                               className={`text-[12px] font-semibold leading-tight ${isCurrent
-                                  ? "text-purple-200"
-                                  : isCompleted
-                                    ? "text-gray-300"
-                                    : "text-gray-600"
+                                ? "text-purple-200"
+                                : isCompleted
+                                  ? "text-gray-300"
+                                  : "text-gray-600"
                                 }`}
                             >
                               {String(i + 1).padStart(2, "0")} {s.title}
                             </span>
                             {isCurrent && (
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 border border-purple-500/30 whitespace-nowrap shrink-0">
+                              <span className="status-pill text-purple-400 border-purple-500/30 bg-purple-500/10 text-[9px] whitespace-nowrap shrink-0">
                                 Current
                               </span>
                             )}
                             {isCompleted && (
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500/70 border border-emerald-500/20 whitespace-nowrap shrink-0">
+                              <span className="status-pill text-emerald-400 border-emerald-500/20 bg-emerald-500/10 text-[9px] whitespace-nowrap shrink-0">
                                 Done
                               </span>
                             )}
                             {isLocked && (
-                              <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-gray-800/60 text-gray-600 border border-gray-700/30 whitespace-nowrap shrink-0">
+                              <span className="status-pill text-gray-600 border-gray-700/30 bg-gray-800/60 text-[9px] whitespace-nowrap shrink-0">
                                 <Lock className="w-2 h-2" />
                                 Locked
                               </span>
@@ -569,7 +556,7 @@ export default function InterviewPage() {
                       AI Coach Tip
                     </span>
                   </div>
-                  <p className="text-[11px] text-gray-400 leading-relaxed">
+                  <p className="muted-text text-[11px] leading-relaxed">
                     {currentStep === 0 && "Start with users, core actions, and non-functional needs before discussing scale."}
                     {currentStep === 1 && "Estimate DAU, QPS, and storage. Use round numbers — precision isn't the goal."}
                     {currentStep === 2 && "Define REST or GraphQL endpoints. Show request/response shapes for core actions."}
@@ -617,7 +604,7 @@ export default function InterviewPage() {
                   </div>
                 </div>
                 {avgScore === 0 && (
-                  <p className="text-center text-[11px] text-gray-600 pb-1">
+                  <p className="muted-text text-center text-[11px] pb-1">
                     Not enough data yet — answer a few questions to see your score.
                   </p>
                 )}
@@ -627,7 +614,7 @@ export default function InterviewPage() {
                     { label: "Depth", value: scores.depth, bar: "from-purple-600 to-purple-400" },
                     { label: "Correctness", value: scores.correctness, bar: "from-emerald-600 to-emerald-400" },
                   ].map(({ label, value, bar }) => (
-                    <div key={label} className="p-3 rounded-xl bg-gray-900/40 border border-gray-800/50">
+                    <div key={label} className="premium-card p-3">
                       <div className="flex justify-between items-center mb-1.5">
                         <span className="text-[12px] font-semibold text-gray-400">{label}</span>
                         <span className="text-[12px] font-bold text-gray-300">{value}<span className="text-gray-600 font-normal">/10</span></span>
@@ -651,7 +638,7 @@ export default function InterviewPage() {
             {/* ── ARCH TAB ── */}
             {sidebarTab === "arch" && (
               <div className="space-y-3">
-                <p className="text-[11px] text-gray-500">Architecture readiness based on your progress.</p>
+                <p className="muted-text text-[11px]">Architecture readiness based on your progress.</p>
                 {[
                   { label: "Requirements captured", done: highestStep > 0 },
                   { label: "Scale assumptions", done: highestStep > 1 },
@@ -665,7 +652,7 @@ export default function InterviewPage() {
                     <span className={`text-[12px] font-medium ${done ? "text-gray-300" : "text-gray-600"}`}>{label}</span>
                   </div>
                 ))}
-                <p className="text-[11px] text-gray-500 pt-1">
+                <p className="muted-text text-[11px] pt-1">
                   {highestStep < 4 ? `Complete ${4 - highestStep} more step${4 - highestStep > 1 ? "s" : ""} before generating.` : "Ready to generate your architecture diagram."}
                 </p>
                 <div className="space-y-1.5">
@@ -679,7 +666,7 @@ export default function InterviewPage() {
                   ))}
                 </div>
                 <button onClick={handleGenerateArchitecture} disabled={generating}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold text-[13px] transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 disabled:opacity-50 mt-1">
+                  className="primary-button w-full py-3 text-[13px] gap-2 mt-1">
                   {generating ? <><Loader2 className="w-4 h-4 animate-spin" />Generating...</> : <><Zap className="w-4 h-4" />Generate Architecture</>}
                 </button>
               </div>
@@ -691,8 +678,8 @@ export default function InterviewPage() {
       {/* Toast */}
       {toastMessage && (
         <div className={`fixed bottom-6 right-6 px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl z-50 transition-all ${toastMessage.startsWith("\u2713")
-            ? "bg-emerald-950 border border-emerald-500/30 text-emerald-400"
-            : "bg-gray-900 border border-red-500/30 text-red-400"
+          ? "bg-emerald-950 border border-emerald-500/30 text-emerald-400"
+          : "bg-gray-900 border border-red-500/30 text-red-400"
           }`}>
           {toastMessage}
         </div>
