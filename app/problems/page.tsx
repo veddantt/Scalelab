@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { problemMeta } from "@/lib/problems";
 import type { ProblemMeta } from "@/lib/problems";
 import { getSession, saveSession } from "@/lib/sessionStorage";
-import Navbar from "@/components/Navbar";
 import MiniArchPreview from "@/components/MiniArchPreview";
 import {
   Clock,
@@ -197,10 +196,16 @@ export default function ProblemsPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#020617] text-white">
-      <Navbar />
+      {/* Page Header */}
+      <div className="px-6 py-8 border-b border-slate-800/50">
+        <h1 className="text-2xl font-bold text-white mb-2 tracking-tight">System Design Challenges</h1>
+        <p className="text-[14px] text-gray-400 max-w-2xl">
+          Practice real interview problems across scale, APIs, databases, and architecture.
+        </p>
+      </div>
 
       {/* Main App Workspace */}
-      <div className="flex flex-1 flex-col md:flex-row border-t border-slate-800/50">
+      <div className="flex flex-1 flex-col md:flex-row">
         
         {/* ─── LEFT SIDEBAR (Challenge List) ─── */}
         <div className="w-full md:w-[340px] lg:w-[380px] shrink-0 border-b md:border-b-0 md:border-r border-slate-800/60 flex flex-col bg-[#020617] z-10 md:sticky md:top-0 md:h-[calc(100vh)]">

@@ -129,6 +129,8 @@ export default function SaveButton({ problemId }: SaveButtonProps) {
         open={authOpen}
         onClose={() => setAuthOpen(false)}
         onSuccess={handleAuthSuccess}
+        title="Save your session?"
+        description="Sign in to keep your progress and revisit this design later."
       />
     </>
   );

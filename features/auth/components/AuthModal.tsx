@@ -9,11 +9,14 @@ interface AuthModalProps {
   onClose: () => void;
   /** Called after a successful sign-in or sign-up */
   onSuccess?: () => void;
+  initialMode?: "signin" | "signup";
+  title?: string;
+  description?: string;
 }
 
-export default function AuthModal({ open, onClose, onSuccess }: AuthModalProps) {
+export default function AuthModal({ open, onClose, onSuccess, initialMode = "signin", title, description }: AuthModalProps) {
   const { signIn, signUp } = useAuth();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -82,12 +85,12 @@ export default function AuthModal({ open, onClose, onSuccess }: AuthModalProps) 
         <div className="p-8 pt-10">
           {/* Header */}
           <h2 className="text-2xl font-bold text-white mb-1">
-            {mode === "signin" ? "Welcome back" : "Create an account"}
+            {title ? title : (mode === "signin" ? "Welcome back" : "Create an account")}
           </h2>
           <p className="text-gray-400 text-sm mb-8">
-            {mode === "signin"
+            {description ? description : (mode === "signin"
               ? "Sign in to save and restore your interview sessions."
-              : "Create an account to start saving your progress."}
+              : "Create an account to start saving your progress.")}
           </p>
 
           {/* Tabs */}

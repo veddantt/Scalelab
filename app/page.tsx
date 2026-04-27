@@ -1,295 +1,245 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import {
-  Cpu,
-  GitBranch,
-  AlertTriangle,
-  TrendingUp,
-  ArrowRight,
-  ChevronDown,
-  Monitor,
-  Database,
-  Layers,
-  MessageSquare,
-  Activity,
-  Zap
-} from "lucide-react";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
-// ─── Features ────────────────────────────────────────────────────────────────
-const features = [
-  {
-    icon: Cpu,
-    title: "AI-Generated Architectures",
-    description:
-      "Your answers drive a real architecture — not a template. The AI builds the diagram from what you say in the interview.",
-    color: "text-purple-400",
-    bg: "bg-purple-500/8",
-    border: "border-purple-500/15",
-    glow: "hover:shadow-purple-500/10",
-  },
-  {
-    icon: GitBranch,
-    title: "Interactive System Diagrams",
-    description:
-      "Click any node to inspect its role, scaling risks, and the tradeoffs you'd defend in a FAANG interview.",
-    color: "text-blue-400",
-    bg: "bg-blue-500/8",
-    border: "border-blue-500/15",
-    glow: "hover:shadow-blue-500/10",
-  },
-  {
-    icon: AlertTriangle,
-    title: "Bottleneck Analysis",
-    description:
-      "Automatically surfaces single points of failure, write contention, and cache-invalidation risks in your design.",
-    color: "text-amber-400",
-    bg: "bg-amber-500/8",
-    border: "border-amber-500/15",
-    glow: "hover:shadow-amber-500/10",
-  },
-  {
-    icon: TrendingUp,
-    title: "Scaling Recommendations",
-    description:
-      "Actionable advice on read replicas, sharding, async workers, and horizontal scaling — tailored to your design.",
-    color: "text-emerald-400",
-    bg: "bg-emerald-500/8",
-    border: "border-emerald-500/15",
-    glow: "hover:shadow-emerald-500/10",
-  },
+const NODES = [
+  { id: "user", x: 44, y: 85, label: "User", sub: "request" },
+  { id: "lb", x: 148, y: 85, label: "Load Bal", sub: "round-robin" },
+  { id: "svc1", x: 260, y: 44, label: "Service A", sub: "worker" },
+  { id: "svc2", x: 260, y: 126, label: "Service B", sub: "worker" },
+  { id: "cache", x: 372, y: 44, label: "Cache", sub: "redis" },
+  { id: "db", x: 372, y: 126, label: "Database", sub: "postgres" },
 ];
 
-// ─── Live Flow Nodes ───────────────────────────────────────────────────────
-const flowNodes = [
-  { id: "client",  label: "Client",        icon: Monitor,       color: "text-blue-400",   bg: "bg-blue-500/10",   border: "border-blue-500/30" },
-  { id: "gateway", label: "WS Gateway",    icon: Activity,      color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/30" },
-  { id: "chat",    label: "Chat Service",  icon: MessageSquare, color: "text-cyan-400",   bg: "bg-cyan-500/10",   border: "border-cyan-500/30" },
-  { id: "kafka",   label: "Kafka",         icon: Layers,        color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/30", insight: "bottleneck" },
-  { id: "db",      label: "Database",      icon: Database,      color: "text-amber-400",  bg: "bg-amber-500/10",  border: "border-amber-500/30",  insight: "scaling" },
+const EDGES = [
+  { from: "user", to: "lb" },
+  { from: "lb", to: "svc1" },
+  { from: "lb", to: "svc2" },
+  { from: "svc1", to: "cache" },
+  { from: "svc1", to: "db" },
+  { from: "svc2", to: "cache" },
+  { from: "svc2", to: "db" },
 ];
 
-function LiveFlowStrip() {
-  const [activeNode, setActiveNode] = useState(0);
+const NW = 74, NH = 30;
 
-  // Cycle the packet through the nodes
+function center(id: string) {
+  const n = NODES.find((n) => n.id === id)!;
+  return { x: n.x + NW / 2, y: n.y + NH / 2 };
+}
+
+const PROMPTS = [
+  "How would you scale this to 10M users?",
+  "What happens if the API layer fails?",
+  "How are you handling cache invalidation?",
+  "Where are the single points of failure?",
+];
+
+function SystemFlowCanvas() {
+  const ref = useRef<HTMLCanvasElement>(null);
+  const state = useRef({ edge: 0, t: 0, hovered: null as string | null });
+
   useEffect(() => {
-    const t = setInterval(() => {
-      setActiveNode((prev) => (prev + 1) % flowNodes.length);
-    }, 1500); // Packet moves every 1.5s
-    return () => clearInterval(t);
+    const canvas = ref.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d")!;
+    const W = 480, H = 185;
+    canvas.width = W; canvas.height = H;
+
+    function drawNode(n: (typeof NODES)[0], active: boolean, hov: boolean) {
+      ctx.beginPath();
+      ctx.roundRect(n.x, n.y, NW, NH, 6);
+      ctx.fillStyle = hov ? "rgba(59,130,246,0.16)" : active ? "rgba(59,130,246,0.10)" : "rgba(255,255,255,0.03)";
+      ctx.fill();
+      ctx.strokeStyle = active || hov ? "rgba(59,130,246,0.45)" : "rgba(255,255,255,0.08)";
+      ctx.lineWidth = active || hov ? 1 : 0.8;
+      ctx.stroke();
+      ctx.textAlign = "center";
+      ctx.font = "500 10px 'DM Mono',monospace";
+      ctx.fillStyle = active || hov ? "#93c5fd" : "#64748b";
+      ctx.fillText(n.label, n.x + NW / 2, n.y + 12);
+      ctx.font = "400 8px 'DM Mono',monospace";
+      ctx.fillStyle = active ? "#3b82f6" : "#1e3a5f";
+      ctx.fillText(n.sub, n.x + NW / 2, n.y + 23);
+    }
+
+    function drawEdge(e: (typeof EDGES)[0], active: boolean) {
+      const f = center(e.from), t = center(e.to);
+      ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(t.x, t.y);
+      ctx.strokeStyle = active ? "rgba(59,130,246,0.35)" : "rgba(255,255,255,0.06)";
+      ctx.lineWidth = active ? 1.2 : 0.7;
+      ctx.stroke();
+    }
+
+    function drawParticle(e: (typeof EDGES)[0], pt: number) {
+      const f = center(e.from), t = center(e.to);
+      const x = f.x + (t.x - f.x) * pt, y = f.y + (t.y - f.y) * pt;
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = "#3b82f6"; ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, 5.5, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(59,130,246,0.22)"; ctx.fill();
+    }
+
+    let raf: number;
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      const { edge, t, hovered } = state.current;
+      const active = new Set([EDGES[edge].from, EDGES[edge].to]);
+      EDGES.forEach((e, i) => drawEdge(e, i === edge));
+      NODES.forEach((n) => drawNode(n, active.has(n.id), n.id === hovered));
+      drawParticle(EDGES[edge], t);
+      state.current.t = (t + 0.018) % 1;
+      raf = requestAnimationFrame(draw);
+    }
+    draw();
+
+    const iv = setInterval(() => { state.current.edge = (state.current.edge + 1) % EDGES.length; state.current.t = 0; }, 1400);
+
+    const onMove = (ev: MouseEvent) => {
+      const r = canvas.getBoundingClientRect();
+      const mx = (ev.clientX - r.left) * (W / r.width);
+      const my = (ev.clientY - r.top) * (H / r.height);
+      state.current.hovered = NODES.find((n) => mx >= n.x && mx <= n.x + NW && my >= n.y && my <= n.y + NH)?.id ?? null;
+    };
+    canvas.addEventListener("mousemove", onMove);
+    canvas.addEventListener("mouseleave", () => (state.current.hovered = null));
+    return () => { cancelAnimationFrame(raf); clearInterval(iv); };
   }, []);
 
-  const currentInsight = flowNodes[activeNode]?.insight;
+  return <canvas ref={ref} style={{ width: "100%", height: "auto", display: "block" }} />;
+}
+
+function WorkspacePreview() {
+  const [idx, setIdx] = useState(0);
+  const [show, setShow] = useState(true);
+
+  useEffect(() => {
+    const iv = setInterval(() => {
+      setShow(false);
+      setTimeout(() => { setIdx((i) => (i + 1) % PROMPTS.length); setShow(true); }, 220);
+    }, 3200);
+    return () => clearInterval(iv);
+  }, []);
 
   return (
-    <div className="w-full max-w-4xl mx-auto mt-16 flex flex-col items-center">
-      <div className="inline-flex items-center gap-2 mb-8">
-        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Live Example: Real-Time Chat System</span>
-      </div>
-
-      {/* The Strip */}
-      <div className="relative w-full overflow-x-auto md:overflow-visible pb-4 hide-scrollbar">
-        <div className="flex items-center justify-center min-w-max md:min-w-0">
-          {flowNodes.map((node, i) => {
-            const Icon = node.icon;
-            const isTarget = activeNode === i;
-            
-            return (
-              <div key={node.id} className="flex items-center shrink-0">
-                {/* Node Pill */}
-                <div
-                  className={`
-                    relative flex items-center gap-2 px-4 py-2.5 rounded-full border 
-                    transition-all duration-300
-                    ${isTarget ? `${node.bg} ${node.border} scale-105 shadow-[0_0_20px_rgba(0,0,0,0.5)]` : "bg-gray-900/30 border-gray-800/60 opacity-60"}
-                  `}
-                >
-                  <Icon className={`w-4 h-4 ${isTarget ? node.color : "text-gray-500"}`} />
-                  <span className={`text-[12px] font-semibold whitespace-nowrap ${isTarget ? node.color : "text-gray-400"}`}>
-                    {node.label}
-                  </span>
-
-                  {/* Packet visual (only shows when this node is active) */}
-                  {isTarget && (
-                    <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[pulse_1s_ease-in-out_infinite]" />
-                  )}
-                </div>
-
-                {/* Connector */}
-                {i < flowNodes.length - 1 && (
-                  <div className="flex items-center w-8 md:w-12 shrink-0 relative overflow-hidden h-4 mx-1">
-                    {/* Background track */}
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full h-px bg-gray-800" />
-                    </div>
-                    {/* The traveling packet (only travels forward to the NEXT node) */}
-                    {activeNode === i && (
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-4 h-1.5 rounded-full bg-white shadow-[0_0_10px_white] animate-[slideRight_1.5s_linear_forwards]" />
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.12 }}
+      style={{ background: "#0b0f1a", borderRadius: 12, border: "1px solid rgba(255,255,255,0.07)", overflow: "hidden", boxShadow: "0 28px 80px rgba(0,0,0,0.55)" }}
+    >
+      {/* chrome */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.02)" }}>
+        {["#ef4444", "#f59e0b", "#22c55e"].map((c) => (
+          <div key={c} style={{ width: 9, height: 9, borderRadius: "50%", background: c, opacity: 0.65 }} />
+        ))}
+        <div style={{ flex: 1, height: 20, borderRadius: 4, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 8px" }}>
+          <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 9, color: "#94a3b8" }}>scalelab.app / interview / scale-10m</span>
         </div>
       </div>
 
-      <style>{`
-        @keyframes slideRight {
-          0% { transform: translateX(-100%); opacity: 0; }
-          10% { opacity: 1; }
-          90% { opacity: 1; }
-          100% { transform: translateX(300%); opacity: 0; }
-        }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
-
-      {/* Insights Row */}
-      <div className="flex flex-col sm:flex-row gap-4 mt-8 w-full justify-center">
-        {/* Bottleneck Card */}
-        <div className={`
-          flex-1 w-full sm:max-w-[280px] lg:max-w-[280px] p-4 rounded-2xl border transition-all duration-500
-          ${currentInsight === "bottleneck" ? "bg-red-500/10 border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.1)] -translate-y-1" : "bg-gray-900/20 border-gray-800/40 opacity-50"}
-        `}>
-          <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className={`w-3.5 h-3.5 ${currentInsight === "bottleneck" ? "text-red-400" : "text-gray-600"}`} />
-            <span className={`text-[10px] font-bold uppercase tracking-wider ${currentInsight === "bottleneck" ? "text-red-400" : "text-gray-600"}`}>Bottleneck</span>
-          </div>
-          <p className={`text-[12px] leading-relaxed ${currentInsight === "bottleneck" ? "text-gray-200" : "text-gray-500"}`}>
-            Massive message fan-out creates contention at peak traffic.
-          </p>
+      {/* canvas */}
+      <div style={{ padding: "20px 24px 14px" }}>
+        <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 8, letterSpacing: "0.18em", color: "#1e3a5f", textTransform: "uppercase", marginBottom: 16 }}>
+          Live system · URL shortener at scale
         </div>
-
-        {/* Tradeoff Card */}
-        <div className={`
-          flex-1 w-full sm:max-w-[280px] lg:max-w-[280px] p-4 rounded-2xl border transition-all duration-500
-          ${currentInsight === "tradeoff" ? "bg-blue-500/10 border-blue-500/30 shadow-[0_0_30px_rgba(59,130,246,0.1)] -translate-y-1" : "bg-gray-900/20 border-gray-800/40 opacity-50"}
-        `}>
-          <div className="flex items-center gap-2 mb-2">
-            <GitBranch className={`w-3.5 h-3.5 ${currentInsight === "tradeoff" ? "text-blue-400" : "text-gray-600"}`} />
-            <span className={`text-[10px] font-bold uppercase tracking-wider ${currentInsight === "tradeoff" ? "text-blue-400" : "text-gray-600"}`}>Tradeoff</span>
-          </div>
-          <p className={`text-[12px] leading-relaxed ${currentInsight === "tradeoff" ? "text-gray-200" : "text-gray-500"}`}>
-            Guaranteed delivery via Kafka adds slight latency vs memory queues.
-          </p>
-        </div>
-
-        {/* Scaling Card */}
-        <div className={`
-          flex-1 w-full sm:max-w-[280px] lg:max-w-[280px] p-4 rounded-2xl border transition-all duration-500
-          ${currentInsight === "scaling" ? "bg-emerald-500/10 border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.1)] -translate-y-1" : "bg-gray-900/20 border-gray-800/40 opacity-50"}
-        `}>
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className={`w-3.5 h-3.5 ${currentInsight === "scaling" ? "text-emerald-400" : "text-gray-600"}`} />
-            <span className={`text-[10px] font-bold uppercase tracking-wider ${currentInsight === "scaling" ? "text-emerald-400" : "text-gray-600"}`}>Scaling</span>
-          </div>
-          <p className={`text-[12px] leading-relaxed ${currentInsight === "scaling" ? "text-gray-200" : "text-gray-500"}`}>
-            Partition Kafka by chat room and async archive old messages.
-          </p>
-        </div>
+        <SystemFlowCanvas />
       </div>
-    </div>
+
+      {/* prompt bar */}
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: "11px 20px", display: "flex", alignItems: "center", gap: 9 }}>
+        <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 6px rgba(34,197,94,0.6)", flexShrink: 0 }} />
+        <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 10, color: "#2d3f55" }}>AI:</span>
+        <motion.span key={idx} animate={{ opacity: show ? 1 : 0 }} transition={{ duration: 0.2 }}
+          style={{ fontFamily: "'DM Mono',monospace", fontSize: 10, color: "#64748b" }}>
+          {PROMPTS[idx]}
+        </motion.span>
+        <motion.span animate={{ opacity: [1, 0, 1] }} transition={{ duration: 1, repeat: Infinity }}
+          style={{ display: "inline-block", width: 2, height: 11, background: "#3b82f6", marginLeft: 2, flexShrink: 0 }} />
+      </div>
+    </motion.div>
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-export default function Home() {
+export default function HomePage() {
   return (
-    <main className="min-h-screen bg-[#020617] text-white overflow-hidden">
-      {/* ─── CENTERED HERO ─── */}
-      <section id="hero" className="relative max-w-[1400px] mx-auto px-4 sm:px-6 md:px-10 pt-20 md:pt-28 pb-16 flex flex-col items-center text-center">
-        {/* Glow backdrop */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden flex justify-center">
-          <div className="absolute top-0 w-[800px] h-[500px] bg-purple-600/8 blur-[160px] rounded-full" />
-          <div className="absolute top-40 w-[600px] h-[400px] bg-blue-600/6 blur-[140px] rounded-full" />
-        </div>
+    <main style={{ minHeight: "100vh", background: "#07090f", color: "#f1f5f9", overflowX: "hidden" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
+        *{box-sizing:border-box}
+        .btn-p{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 20px;border-radius:8px;background:#3b82f6;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;border:none;cursor:pointer;text-decoration:none;transition:background .15s,transform .12s}
+        .btn-p:hover{background:#2563eb;transform:translateY(-1px)}
+        .btn-g{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 20px;border-radius:8px;background:transparent;color:#64748b;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,0.09);cursor:pointer;text-decoration:none;transition:all .15s}
+        .btn-g:hover{border-color:rgba(255,255,255,0.18);color:#94a3b8;transform:translateY(-1px)}
+        .pill{padding:10px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.012);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:#94a3b8;display:flex;align-items:center;gap:10px;transition:border-color .2s,color .2s}
+        .pill:hover{border-color:rgba(59,130,246,0.28);color:#cbd5e1}
+        .pill::before{content:'';display:block;width:3px;height:3px;border-radius:50%;background:#3b82f6;flex-shrink:0}
+      `}</style>
 
-        <div className="relative z-10 flex flex-col items-center max-w-4xl">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 mb-8 rounded-full border border-purple-500/20 bg-purple-500/6 text-purple-400 text-[11px] font-bold tracking-widest uppercase">
-            <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-            AI-Powered System Design
-          </div>
+      {/* bg */}
+      <div aria-hidden style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px)", backgroundSize: "44px 44px" }} />
+        <div style={{ position: "absolute", top: "-18%", right: "-6%", width: 520, height: 520, borderRadius: "50%", background: "radial-gradient(circle,rgba(59,130,246,.065) 0%,transparent 65%)" }} />
+      </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[4rem] font-extrabold tracking-tight leading-[1.2] lg:leading-[1.1] mb-5 lg:mb-6">
-            Practice System Design
-            <br />
-            <span className="bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
-              With AI Feedback
-            </span>
-          </h1>
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 1160, margin: "0 auto", padding: "0 32px" }}>
 
-          <p className="text-gray-400 text-[15px] lg:text-[17px] leading-relaxed mb-8 lg:mb-10 max-w-2xl px-2">
-            Answer interview questions, get a real architecture diagram, see your bottlenecks, and receive a final score — all powered by AI in real time.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8 w-full px-4">
-            <a
-              href="/problems"
-              className="w-full sm:w-auto group inline-flex justify-center items-center gap-2.5 px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-2xl font-bold text-[15px] transition-all shadow-xl shadow-purple-500/25 hover:shadow-purple-500/35 hover:scale-[1.03] active:scale-[0.97]"
-            >
-              Start Practicing
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </a>
-            <a
-              href="#preview"
-              className="w-full sm:w-auto inline-flex justify-center items-center gap-2 px-7 py-4 rounded-2xl border border-gray-700/60 bg-gray-900/40 text-gray-300 hover:text-white hover:border-gray-600 text-[14px] font-semibold transition-all hover:scale-[1.02]"
-            >
-              <ChevronDown className="w-4 h-4" />
-              View Demo
-            </a>
-          </div>
-        </div>
-
-        {/* ── LIVE FLOW STRIP ── */}
-        <div id="preview" className="relative z-10 w-full pt-10">
-          <LiveFlowStrip />
-        </div>
-      </section>
-
-      {/* ─── FEATURES ─── */}
-      <section className="max-w-6xl mx-auto px-6 md:px-10 py-24">
-        <div className="mb-14 text-center">
-          <p className="text-purple-400 text-[11px] font-bold tracking-widest uppercase mb-3">Features</p>
-          <h2 className="text-3xl md:text-4xl font-bold">Everything you need to ace system design</h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {features.map((f) => (
-            <div
-              key={f.title}
-              className={`group p-8 rounded-2xl border ${f.border} ${f.bg} backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${f.glow} cursor-default`}
-            >
-              <div className={`w-12 h-12 rounded-xl ${f.bg} border ${f.border} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300`}>
-                <f.icon className={`w-6 h-6 ${f.color}`} />
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-white">{f.title}</h3>
-              <p className="text-gray-400 text-[14px] leading-relaxed">{f.description}</p>
+        {/* hero */}
+        <section style={{ display: "grid", gridTemplateColumns: "1fr 1.05fr", gap: 56, alignItems: "center", paddingTop: 72, paddingBottom: 68 }}>
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "4px 12px", borderRadius: 20, border: "1px solid rgba(139,92,246,0.22)", background: "rgba(139,92,246,0.07)", marginBottom: 26 }}>
+              <motion.div animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 2, repeat: Infinity }}
+                style={{ width: 5, height: 5, borderRadius: "50%", background: "#a78bfa" }} />
+              <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 9, letterSpacing: "0.1em", color: "#c4b5fd", textTransform: "uppercase" }}>Interview Simulator</span>
             </div>
-          ))}
-        </div>
-      </section>
+            <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: "clamp(40px,4.8vw,56px)", fontWeight: 800, lineHeight: 0.98, letterSpacing: "-.035em", color: "#f1f5f9", margin: "0 0 5px" }}>Think Like a Systems Engineer.</h1>
+            <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: "clamp(40px,4.8vw,56px)", fontWeight: 800, lineHeight: 0.98, letterSpacing: "-.035em", color: "#64748b", margin: "0 0 28px" }}>Not a LeetCode Solver.</h1>
+            <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 15, lineHeight: 1.75, color: "#94a3b8", maxWidth: 400, margin: "0 0 32px" }}>
+              Break problems into requirements, scale, APIs, and architecture. Get real-time feedback on tradeoffs — like an actual interview.
+            </p>
+            <div style={{ display: "flex", gap: 10, marginBottom: 36 }}>
+              <Link href="/problems" className="btn-p" style={{ backgroundColor: "#8b5cf6" }}>Start Interview <ArrowRight style={{ width: 12, height: 12 }} /></Link>
+              <Link href="/problems" className="btn-g">Explore Problems <ArrowUpRight style={{ width: 12, height: 12 }} /></Link>
+            </div>
+            <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 10, color: "#64748b", letterSpacing: "0.06em" }}>Try instantly. Sign up to save sessions and track progress.</span>
+          </motion.div>
+          <WorkspacePreview />
+        </section>
 
-      {/* ─── BOTTOM CTA ─── */}
-      <section className="text-center px-6 py-20 pb-32">
-        <div className="max-w-xl mx-auto">
-          <h2 className="text-3xl font-bold mb-4">Ready to practice?</h2>
-          <p className="text-gray-400 mb-8 leading-relaxed text-lg">
-            Pick a system design problem and get AI-powered feedback in minutes.
-          </p>
-          <a
-            href="/problems"
-            className="group inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-2xl font-bold text-[16px] transition-all shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 hover:scale-[1.03] active:scale-[0.97]"
-          >
-            Browse Challenges
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </a>
-        </div>
-      </section>
+        {/* truth */}
+        <section style={{ borderTop: "1px solid rgba(255,255,255,0.04)", padding: "64px 0", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 56, alignItems: "center" }}>
+          <div>
+            <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 8, letterSpacing: "0.18em", color: "#a78bfa", textTransform: "uppercase", marginBottom: 18 }}>What Interviews Actually Test</div>
+            <h2 style={{ fontFamily: "'Syne',sans-serif", fontSize: "clamp(22px,2.8vw,30px)", fontWeight: 700, lineHeight: 1.1, letterSpacing: "-.025em", color: "#f1f5f9", margin: 0 }}>
+              It's about tradeoffs,<br />not just drawing boxes.
+            </h2>
+            <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, color: "#94a3b8", marginTop: 12, lineHeight: 1.7 }}>
+              Most prep tools give you static diagrams.<br />This puts you under pressure.
+            </p>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {["What breaks under scale", "Where latency really comes from", "Tradeoffs between consistency and speed", "How real systems evolve"].map((t) => (
+              <div key={t} className="pill" style={{ color: "#cbd5e1" }}>{t}</div>
+            ))}
+          </div>
+        </section>
+
+        {/* cta */}
+        <section style={{ borderTop: "1px solid rgba(255,255,255,0.04)", padding: "80px 0 96px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", position: "relative" }}>
+          <div aria-hidden style={{ position: "absolute", top: "25%", left: "50%", transform: "translateX(-50%)", width: 480, height: 150, borderRadius: "50%", background: "radial-gradient(ellipse,rgba(139,92,246,0.055) 0%,transparent 70%)", pointerEvents: "none" }} />
+          <h2 style={{ fontFamily: "'Syne',sans-serif", fontSize: "clamp(30px,4vw,48px)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-.03em", color: "#f1f5f9", margin: "0 0 4px" }}>Most Engineers Memorize Diagrams.</h2>
+          <h2 style={{ fontFamily: "'Syne',sans-serif", fontSize: "clamp(30px,4vw,48px)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-.03em", color: "#64748b", margin: "0 0 22px" }}>Few Can Design Systems Under Pressure.</h2>
+          <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 16, color: "#94a3b8", marginBottom: 36 }}>Start a real system design interview and learn how to reason through scale, APIs, databases, and tradeoffs.</p>
+          <Link href="/problems" className="btn-p" style={{ backgroundColor: "#8b5cf6", height: 44, fontSize: 14, padding: "0 28px" }}>
+            Start Interview <ArrowRight style={{ width: 13, height: 13 }} />
+          </Link>
+          <span style={{ fontFamily: "'DM Mono',monospace", fontSize: 10, letterSpacing: "0.05em", color: "#64748b", marginTop: 20 }}>Try instantly. Sign up when you want to save progress.</span>
+        </section>
+
+      </div>
     </main>
   );
 }

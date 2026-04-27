@@ -8,6 +8,7 @@ import { Zap, History, LogOut, ChevronDown, User } from "lucide-react";
 export default function Navbar() {
   const { user, loading, signOut } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -21,10 +22,10 @@ export default function Navbar() {
           </a>
 
           {/* Right */}
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-4 sm:gap-6">
             <a
               href="/problems"
-              className="text-[13px] font-medium text-gray-500 hover:text-gray-300 transition"
+              className="text-[13px] font-medium text-gray-400 hover:text-white transition"
             >
               Problems
             </a>
@@ -92,19 +93,33 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              /* ─── Logged out: sign in button ─── */
-              <button
-                onClick={() => setAuthOpen(true)}
-                className="px-3 sm:px-4 py-1.5 rounded-xl bg-gray-900/60 border border-gray-800/50 hover:border-purple-500/30 text-[13px] font-medium text-gray-400 hover:text-white transition"
-              >
-                Sign In
-              </button>
+              /* ─── Logged out: sign in / sign up ─── */
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setAuthMode("signin");
+                    setAuthOpen(true);
+                  }}
+                  className="px-4 py-2 rounded-xl border border-transparent hover:bg-white/[0.05] text-[13px] font-medium text-gray-400 hover:text-white transition"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => {
+                    setAuthMode("signup");
+                    setAuthOpen(true);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-[13px] font-semibold transition-all shadow-lg hover:shadow-purple-500/25"
+                >
+                  Sign Up
+                </button>
+              </div>
             )}
           </div>
         </div>
       </nav>
 
-      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} initialMode={authMode} />
     </>
   );
 }

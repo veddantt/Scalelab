@@ -8,7 +8,6 @@ import { saveSession, getSession, clearSession } from "@/lib/sessionStorage";
 import { getProblem } from "@/lib/scenarios";
 import { INTERVIEW_STEPS, ARCHITECTURE_STYLES } from "@/lib/config/workflow";
 import { getHintForStep } from "@/lib/improvementHints";
-import Navbar from "@/components/Navbar";
 import SaveButton from "@/components/SaveButton";
 import { Loader2, Send, Lock, CheckCircle2, Lightbulb, Zap, ArrowLeft, RefreshCw, Target } from "lucide-react";
 
@@ -259,7 +258,6 @@ export default function InterviewPage() {
   if (!scenario) {
     return (
       <div className="h-screen bg-[#020617] flex flex-col text-white">
-        <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
           <h1 className="text-2xl font-bold mb-4">Problem Not Found</h1>
           <p className="text-gray-400 mb-8 text-sm">The scenario you are looking for does not exist.</p>
@@ -272,10 +270,9 @@ export default function InterviewPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-[#020617] text-white overflow-hidden">
-      <Navbar />
-
-      {/* ─── Main Workspace ─── */}
+    <div className="flex h-screen bg-[#020617] text-slate-300 font-sans overflow-hidden selection:bg-purple-500/30">
+      
+      {/* ─── LEFT SIDEBAR (Controls & Context) ─── */}
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden border-t border-slate-800/50">
         
         {/* ─── LEFT: Challenge Context & Sidebar ─── */}
