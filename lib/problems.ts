@@ -7,7 +7,7 @@ import type { Problem } from "@/lib/types";
 export interface ArchPreviewNode {
   id: string;
   label: string;
-  systemType: "client" | "gateway" | "service" | "cache" | "db" | "queue" | "worker" | "external";
+  type: "client" | "gateway" | "service" | "database" | "cache" | "queue" | "storage";
 }
 
 export interface ArchPreviewEdge {
@@ -67,12 +67,12 @@ export const problemMeta: ProblemMeta[] = [
     },
     archPreview: {
       nodes: [
-        { id: "c", label: "Client", systemType: "client" },
-        { id: "cdn", label: "CDN", systemType: "external" },
-        { id: "api", label: "API Gateway", systemType: "gateway" },
-        { id: "svc", label: "URL Service", systemType: "service" },
-        { id: "cache", label: "Redis", systemType: "cache" },
-        { id: "db", label: "PostgreSQL", systemType: "db" },
+        { id: "c", label: "Client", type: "client" },
+        { id: "cdn", label: "CDN", type: "service" },
+        { id: "api", label: "API Gateway", type: "gateway" },
+        { id: "svc", label: "URL Service", type: "service" },
+        { id: "cache", label: "Redis", type: "cache" },
+        { id: "db", label: "PostgreSQL", type: "database" },
       ],
       edges: [
         { from: "c", to: "cdn" },
@@ -113,12 +113,12 @@ export const problemMeta: ProblemMeta[] = [
     },
     archPreview: {
       nodes: [
-        { id: "c", label: "Client", systemType: "client" },
-        { id: "ws", label: "WS Gateway", systemType: "gateway" },
-        { id: "chat", label: "Chat Service", systemType: "service" },
-        { id: "q", label: "Kafka", systemType: "queue" },
-        { id: "w", label: "Fan-out Worker", systemType: "worker" },
-        { id: "db", label: "Cassandra", systemType: "db" },
+        { id: "c", label: "Client", type: "client" },
+        { id: "ws", label: "WS Gateway", type: "gateway" },
+        { id: "chat", label: "Chat Service", type: "service" },
+        { id: "q", label: "Kafka", type: "queue" },
+        { id: "w", label: "Fan-out Worker", type: "service" },
+        { id: "db", label: "Cassandra", type: "database" },
       ],
       edges: [
         { from: "c", to: "ws" },
@@ -143,7 +143,7 @@ export const problemMeta: ProblemMeta[] = [
     requirements: [
       "Real-time driver location tracking at 1s intervals",
       "ETA calculation using maps + traffic data",
-      "Order lifecycle: placed → accepted → picked up → delivered",
+      "Order lifecycle: placed \u2192 accepted \u2192 picked up \u2192 delivered",
       "Payment processing with idempotency guarantees",
       "Restaurant and driver matching within 1km radius",
     ],
@@ -159,12 +159,12 @@ export const problemMeta: ProblemMeta[] = [
     },
     archPreview: {
       nodes: [
-        { id: "c", label: "Client", systemType: "client" },
-        { id: "api", label: "API Gateway", systemType: "gateway" },
-        { id: "ord", label: "Order Service", systemType: "service" },
-        { id: "loc", label: "Location Service", systemType: "service" },
-        { id: "q", label: "Event Bus", systemType: "queue" },
-        { id: "db", label: "PostgreSQL", systemType: "db" },
+        { id: "c", label: "Client", type: "client" },
+        { id: "api", label: "API Gateway", type: "gateway" },
+        { id: "ord", label: "Order Service", type: "service" },
+        { id: "loc", label: "Location Service", type: "service" },
+        { id: "q", label: "Event Bus", type: "queue" },
+        { id: "db", label: "PostgreSQL", type: "database" },
       ],
       edges: [
         { from: "c", to: "api" },
@@ -205,11 +205,11 @@ export const problemMeta: ProblemMeta[] = [
     },
     archPreview: {
       nodes: [
-        { id: "c", label: "Client", systemType: "client" },
-        { id: "edge", label: "Edge Node", systemType: "gateway" },
-        { id: "rl", label: "Rate Limiter", systemType: "service" },
-        { id: "redis", label: "Redis Cluster", systemType: "cache" },
-        { id: "api", label: "Upstream API", systemType: "external" },
+        { id: "c", label: "Client", type: "client" },
+        { id: "edge", label: "Edge Node", type: "gateway" },
+        { id: "rl", label: "Rate Limiter", type: "service" },
+        { id: "redis", label: "Redis Cluster", type: "cache" },
+        { id: "api", label: "Upstream API", type: "service" },
       ],
       edges: [
         { from: "c", to: "edge" },
@@ -249,12 +249,12 @@ export const problemMeta: ProblemMeta[] = [
     },
     archPreview: {
       nodes: [
-        { id: "c", label: "Client", systemType: "client" },
-        { id: "api", label: "Upload API", systemType: "gateway" },
-        { id: "chunk", label: "Chunk Service", systemType: "service" },
-        { id: "s3", label: "Object Store", systemType: "external" },
-        { id: "meta", label: "Metadata DB", systemType: "db" },
-        { id: "idx", label: "Search Index", systemType: "cache" },
+        { id: "c", label: "Client", type: "client" },
+        { id: "api", label: "Upload API", type: "gateway" },
+        { id: "chunk", label: "Chunk Service", type: "service" },
+        { id: "s3", label: "Object Store", type: "storage" },
+        { id: "meta", label: "Metadata DB", type: "database" },
+        { id: "idx", label: "Search Index", type: "cache" },
       ],
       edges: [
         { from: "c", to: "api" },
@@ -295,12 +295,12 @@ export const problemMeta: ProblemMeta[] = [
     },
     archPreview: {
       nodes: [
-        { id: "svc", label: "Event Source", systemType: "service" },
-        { id: "q", label: "Priority Queue", systemType: "queue" },
-        { id: "fan", label: "Fan-out Service", systemType: "service" },
-        { id: "push", label: "Push Worker", systemType: "worker" },
-        { id: "email", label: "Email Worker", systemType: "worker" },
-        { id: "db", label: "User Prefs DB", systemType: "db" },
+        { id: "svc", label: "Event Source", type: "service" },
+        { id: "q", label: "Priority Queue", type: "queue" },
+        { id: "fan", label: "Fan-out Service", type: "service" },
+        { id: "push", label: "Push Worker", type: "service" },
+        { id: "email", label: "Email Worker", type: "service" },
+        { id: "db", label: "User Prefs DB", type: "database" },
       ],
       edges: [
         { from: "svc", to: "q" },
@@ -342,14 +342,14 @@ export const problemMeta: ProblemMeta[] = [
     },
     archPreview: {
       nodes: [
-        { id: "c", label: "Client", systemType: "client" },
-        { id: "api", label: "API Gateway", systemType: "gateway" },
-        { id: "auto", label: "Autocomplete Svc", systemType: "service" },
-        { id: "redis", label: "Redis Cache", systemType: "cache" },
-        { id: "trie", label: "Trie / Prefix Index", systemType: "db" },
-        { id: "rank", label: "Ranking Service", systemType: "service" },
-        { id: "log", label: "Query Log Pipeline", systemType: "queue" },
-        { id: "store", label: "Search Index Store", systemType: "db" },
+        { id: "c", label: "Client", type: "client" },
+        { id: "api", label: "API Gateway", type: "gateway" },
+        { id: "auto", label: "Autocomplete Svc", type: "service" },
+        { id: "redis", label: "Redis Cache", type: "cache" },
+        { id: "trie", label: "Trie / Prefix Index", type: "database" },
+        { id: "rank", label: "Ranking Service", type: "service" },
+        { id: "log", label: "Query Log Pipeline", type: "queue" },
+        { id: "store", label: "Search Index Store", type: "database" },
       ],
       edges: [
         { from: "c", to: "api" },
@@ -393,14 +393,14 @@ export const problemMeta: ProblemMeta[] = [
     },
     archPreview: {
       nodes: [
-        { id: "c", label: "Admin Dashboard", systemType: "client" },
-        { id: "api", label: "API Gateway", systemType: "gateway" },
-        { id: "sched", label: "Scheduler Service", systemType: "service" },
-        { id: "lock", label: "Leader Election", systemType: "service" },
-        { id: "db", label: "Job Metadata DB", systemType: "db" },
-        { id: "q", label: "Job Queue", systemType: "queue" },
-        { id: "w", label: "Worker Pool", systemType: "worker" },
-        { id: "dlq", label: "Dead Letter Queue", systemType: "queue" },
+        { id: "c", label: "Admin Dashboard", type: "client" },
+        { id: "api", label: "API Gateway", type: "gateway" },
+        { id: "sched", label: "Scheduler Service", type: "service" },
+        { id: "lock", label: "Leader Election", type: "service" },
+        { id: "db", label: "Job Metadata DB", type: "database" },
+        { id: "q", label: "Job Queue", type: "queue" },
+        { id: "w", label: "Worker Pool", type: "service" },
+        { id: "dlq", label: "Dead Letter Queue", type: "queue" },
       ],
       edges: [
         { from: "c", to: "api" },
@@ -444,14 +444,14 @@ export const problemMeta: ProblemMeta[] = [
     },
     archPreview: {
       nodes: [
-        { id: "c", label: "Web / Mobile Client", systemType: "client" },
-        { id: "api", label: "API Gateway", systemType: "gateway" },
-        { id: "upload", label: "Upload Service", systemType: "service" },
-        { id: "s3", label: "Object Storage", systemType: "external" },
-        { id: "q", label: "Message Queue", systemType: "queue" },
-        { id: "tc", label: "Transcoding Workers", systemType: "worker" },
-        { id: "meta", label: "Metadata Service", systemType: "service" },
-        { id: "cdn", label: "CDN", systemType: "external" },
+        { id: "c", label: "Web / Mobile Client", type: "client" },
+        { id: "api", label: "API Gateway", type: "gateway" },
+        { id: "upload", label: "Upload Service", type: "service" },
+        { id: "s3", label: "Object Storage", type: "storage" },
+        { id: "q", label: "Message Queue", type: "queue" },
+        { id: "tc", label: "Transcoding Workers", type: "service" },
+        { id: "meta", label: "Metadata Service", type: "service" },
+        { id: "cdn", label: "CDN", type: "service" },
       ],
       edges: [
         { from: "c", to: "api" },

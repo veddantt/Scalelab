@@ -3,14 +3,13 @@
 import type { ArchPreviewNode, ArchPreviewEdge } from "@/lib/problems";
 
 const nodeColors: Record<ArchPreviewNode["type"], { bg: string; border: string; text: string; dot: string }> = {
-  client:   { bg: "bg-[#6366F1]/10",    border: "border-[#6366F1]/40",    text: "text-blue-300",    dot: "bg-blue-400" },
-  gateway:  { bg: "bg-purple-500/10",  border: "border-purple-500/40",  text: "text-purple-300",  dot: "bg-purple-400" },
-  service:  { bg: "bg-cyan-500/10",    border: "border-cyan-500/40",    text: "text-cyan-300",    dot: "bg-cyan-400" },
-  cache:    { bg: "bg-yellow-500/10",  border: "border-yellow-500/40",  text: "text-yellow-300",  dot: "bg-yellow-400" },
-  db:       { bg: "bg-amber-500/10",   border: "border-amber-500/40",   text: "text-amber-300",   dot: "bg-amber-400" },
-  queue:    { bg: "bg-orange-500/10",  border: "border-orange-500/40",  text: "text-orange-300",  dot: "bg-orange-400" },
-  worker:   { bg: "bg-teal-500/10",    border: "border-teal-500/40",    text: "text-teal-300",    dot: "bg-teal-400" },
-  external: { bg: "bg-indigo-500/10",  border: "border-indigo-500/40",  text: "text-indigo-300",  dot: "bg-indigo-400" },
+  client:   { bg: "bg-slate-800/40", border: "border-slate-700/50", text: "text-slate-200", dot: "bg-slate-400" },
+  gateway:  { bg: "bg-slate-800/60", border: "border-slate-600/50", text: "text-white",     dot: "bg-[#6366F1]" },
+  service:  { bg: "bg-slate-900/60", border: "border-slate-800/60", text: "text-slate-300", dot: "bg-slate-500" },
+  database: { bg: "bg-slate-900/80", border: "border-slate-800/80", text: "text-slate-200", dot: "bg-amber-500/40" },
+  cache:    { bg: "bg-slate-900/80", border: "border-slate-800/80", text: "text-slate-200", dot: "bg-amber-400/30" },
+  queue:    { bg: "bg-slate-900/60", border: "border-slate-800/60", text: "text-slate-300", dot: "bg-slate-500" },
+  storage:  { bg: "bg-slate-900/80", border: "border-slate-800/80", text: "text-slate-200", dot: "bg-slate-400" },
 };
 
 interface MiniArchPreviewProps {
