@@ -59,10 +59,30 @@ export default function InterviewPage() {
   const [improvementGoals, setImprovementGoals] = useState<string[]>([]);
   const [attemptNumber, setAttemptNumber] = useState(1);
   const [input, setInput] = useState("");
+  const [sessionLoaded, setSessionLoaded] = useState(false);
 
+  // 1. Load session from localStorage on mount
+  useEffect(() => {
+    const session = getSession(String(problemId));
+    if (session) {
+      if (session.messages?.length) setMessages(session.messages);
+      if (session.scores) setScores(session.scores);
+      if (session.currentStep !== undefined) {
+        setCurrentStep(session.currentStep);
+        setHighestStep(session.highestStep !== undefined ? session.highestStep : session.currentStep);
+      }
+      if (session.practiceMode) setPracticeMode(session.practiceMode);
+      if (session.weakestAreas) setWeakestAreas(session.weakestAreas);
+      if (session.improvementGoals) setImprovementGoals(session.improvementGoals);
+      if (session.attemptNumber) setAttemptNumber(session.attemptNumber);
+    }
+    setSessionLoaded(true);
+  }, [problemId]);
+
+  // 2. Start interview if no messages exist AFTER session load
   useEffect(() => {
     const startInterview = async () => {
-      if (!problem || messages.length > 0 || sending) return;
+      if (!problem || messages.length > 0 || sending || !sessionLoaded) return;
       setSending(true);
       try {
         const res = await fetch("/api/chat", {
@@ -71,6 +91,7 @@ export default function InterviewPage() {
           body: JSON.stringify({
             messages: [],
             problem,
+            problemId,
             step: 0,
             practiceMode,
             weakestAreas,
@@ -95,27 +116,11 @@ export default function InterviewPage() {
       }
     };
 
-    if (problem && messages.length === 0) {
+    if (sessionLoaded && problem && messages.length === 0) {
       startInterview();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [problem, messages.length]);
-
-  useEffect(() => {
-    const session = getSession(String(problemId));
-    if (session) {
-      if (session.messages?.length) setMessages(session.messages);
-      if (session.scores) setScores(session.scores);
-      if (session.currentStep !== undefined) {
-        setCurrentStep(session.currentStep);
-        setHighestStep(session.highestStep !== undefined ? session.highestStep : session.currentStep);
-      }
-      if (session.practiceMode) setPracticeMode(session.practiceMode);
-      if (session.weakestAreas) setWeakestAreas(session.weakestAreas);
-      if (session.improvementGoals) setImprovementGoals(session.improvementGoals);
-      if (session.attemptNumber) setAttemptNumber(session.attemptNumber);
-    }
-  }, [problemId]);
+  }, [sessionLoaded, problem, messages.length]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -137,6 +142,7 @@ export default function InterviewPage() {
         body: JSON.stringify({
           messages: newMessages,
           problem,
+          problemId,
           step: currentStep,
           practiceMode,
           weakestAreas,
@@ -203,7 +209,12 @@ export default function InterviewPage() {
       const res = await fetch("/api/architecture", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ problem, messages, architectureStyle: selectedStyle }),
+        body: JSON.stringify({ 
+          problem, 
+          problemId,
+          messages, 
+          architectureStyle: selectedStyle 
+        }),
       });
       const data = await res.json();
       const session = getSession(String(problemId)) || { id: String(problemId), problem: problem || "", messages: messages, scores, currentStep, highestStep, createdAt: new Date().toISOString() };

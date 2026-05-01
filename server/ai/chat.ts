@@ -3,6 +3,7 @@
 
 import type { InterviewMessage, InterviewScores } from "@/lib/types";
 import { getProblemMeta } from "@/lib/problems";
+import { extractJSON } from "@/lib/ai";
 
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL = "deepseek/deepseek-chat";
@@ -138,8 +139,7 @@ function clampScores(scores: InterviewScores): InterviewScores {
 }
 
 function parseAIResponse(raw: string): ChatAIResponse {
-  const cleaned = raw.replace(/```json/g, "").replace(/```/g, "").trim();
-  const parsed = JSON.parse(cleaned);
+  const parsed: any = extractJSON(raw);
 
   if (!parsed.reply || !parsed.scores) {
     throw new Error("Invalid AI response shape");
@@ -201,9 +201,11 @@ export async function runChatTurn(req: ChatAIRequest): Promise<ChatAIResponse> {
   let openRouterMessages: { role: string; content: string }[];
 
   if (req.isInitialQuestion) {
-    // For the initial question, use a dedicated prompt with no prior messages
+    // For the initial question, use a dedicated prompt
+    // We add a user message to trigger the response for providers that require it
     openRouterMessages = [
       { role: "system", content: buildInitialPrompt(req.problem, req.problemId) },
+      { role: "user", content: "Start the interview." }
     ];
   } else {
     const systemPrompt = buildSystemPrompt(
@@ -224,8 +226,12 @@ export async function runChatTurn(req: ChatAIRequest): Promise<ChatAIResponse> {
   }
 
   try {
+    console.log(`[chat] Requesting AI turn for problem: ${req.problem}, step: ${req.step}`);
     const content = await callOpenRouter(openRouterMessages);
-    return parseAIResponse(content);
+    console.log(`[chat] AI raw response: ${content.substring(0, 100)}...`);
+    const parsed = parseAIResponse(content);
+    console.log(`[chat] AI response parsed successfully. Advance: ${parsed.shouldAdvance}`);
+    return parsed;
   } catch (firstError) {
     console.warn("[chat] First AI parse/call failed, retrying once", firstError);
 

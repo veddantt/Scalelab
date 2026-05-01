@@ -6,6 +6,7 @@ import type {
   ArchitectureEdge,
   ArchitectureInsights,
 } from "@/lib/types";
+import { extractJSON } from "@/lib/ai";
 
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL = "deepseek/deepseek-chat";
@@ -109,8 +110,7 @@ Rules:
 
 function tryParse(raw: string): ArchitectureAIResponse | null {
   try {
-    const cleaned = raw.replace(/```json/g, "").replace(/```/g, "").trim();
-    return JSON.parse(cleaned);
+    return extractJSON(raw);
   } catch {
     return null;
   }
