@@ -139,7 +139,7 @@ function clampScores(scores: InterviewScores): InterviewScores {
 }
 
 function parseAIResponse(raw: string): ChatAIResponse {
-  const parsed: any = extractJSON(raw);
+  const parsed = extractJSON<Partial<ChatAIResponse>>(raw);
 
   if (!parsed.reply || !parsed.scores) {
     throw new Error("Invalid AI response shape");
