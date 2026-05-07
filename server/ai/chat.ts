@@ -179,6 +179,7 @@ export async function runChatTurn(req: ChatAIRequest): Promise<ChatAIResponse> {
         model: MODEL,
         messages,
         temperature: 0.4,
+        response_format: { type: "json_object" },
       }),
     });
 
